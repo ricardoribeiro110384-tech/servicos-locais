@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administração | Serviços Locais</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f7f8f3;color:#172c25;font:16px/1.5 system-ui,sans-serif}
+header{background:#173d32;color:#fff;padding:16px}
+nav,main{max-width:960px;margin:auto}
+nav{display:flex;justify-content:space-between;gap:16px}
+nav a{color:#fff}
+main{padding:24px 16px 48px}
+.filters{display:flex;flex-wrap:wrap;gap:14px}
+article{border:1px solid #d7e2da;background:white;border-radius:14px;padding:18px;margin:12px 0}
+summary{cursor:pointer;font-weight:650}
+label{display:block;margin:10px 0}
+input,select,textarea,button{font:inherit;border:1px solid #849c90;padding:8px;border-radius:8px}
+input:not([type=checkbox]),select,textarea{width:100%;display:block}
+button{background:#176342;color:white;cursor:pointer}
+a{color:#176342}
+</style>
+<header><nav><strong>Serviços Locais</strong><a href="/">Abrir catálogo</a></nav></header>
+<main>
+<h1>Administrar prestadores</h1>
+<div class="filters">
+<label>Buscar por nome, telefone ou serviço<input id="search" type="search"></label>
+<label>Situação<select id="status"><option value="">Todos</option><option value="pending">Pendentes</option><option value="active">Publicados</option><option value="hidden">Ocultos</option></select></label>
+</div>
+<p id="feedback" role="status">Carregando cadastros…</p>
+<div id="providers"></div>
+<template id="provider">
+<article><details>
+<summary></summary>
+<p><a class="phone" target="_blank" rel="noopener noreferrer"></a></p>
+<form>
+<label>Situação<select name="status"><option value="pending">Pendente</option><option value="active">Publicado</option><option value="hidden">Oculto</option></select></label>
+<label><input name="premium" type="checkbox"> Plano pago</label>
+<div class="extras">
+<label>Descrição<textarea name="description" maxlength="1000"></textarea></label>
+<label>URL da foto<input name="photo" type="url" maxlength="2048" placeholder="https://"></label>
+<label>Nota<select name="stars"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></label>
+<label>Adicionar avaliação recebida de cliente<textarea name="review" maxlength="500"></textarea></label>
+<p class="reviews"></p>
+</div>
+<button>Salvar alterações</button>
+<p class="message" role="status"></p>
+</form></details></article>
+</template>
+</main>
+<script>
+const byId = id => document.getElementById(id);
+const endpoint = '/api/admin';
+const labels = {pending:'Pendente', active:'Publicado', hidden:'Oculto'};
+let providers = [];
+const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+function title(profile) {
+  return [profile.name, profile.category, labels[profile.status], profile.premium ? 'Pago' : 'Gratuito'].join(' · ');
+}
+
+function render() {
+  const query = normalize(byId('search').value.trim());
+  const status = byId('status').value;
+  const matches = providers.filter(p => (!status || p.status === status)
+    && normalize([p.name,p.phone,p.category].join(' ')).includes(query));
+  byId('feedback').textContent = matches.length ? matches.length + ' cadastro(s)' : 'Nenhum cadastro encontrado.';
+  byId('providers').replaceChildren(...matches.map(profile => {
+    const view = byId('provider').content.cloneNode(true);
+    const summary = view.querySelector('summary');
+    summary.textContent = title(profile);
+    const phone = view.querySelector('.phone');
+    phone.textContent = profile.phone + ' · WhatsApp';
+    phone.href = 'https://wa.me/55' + profile.phone;
+    const form = view.querySelector('form');
+    const fields = form.elements;
+    for (const key of ['status','description','photo']) fields[key].value = profile[key];
+    fields.premium.checked = Boolean(profile.premium);
+    const extras = view.querySelector('.extras');
+    const reviews = view.querySelector('.reviews');
+    reviews.textContent = JSON.parse(profile.reviews).length + ' avaliação(ões) registrada(s)';
+    function showExtras() {
+      extras.hidden = !fields.premium.checked;
+      for (const field of extras.querySelectorAll('input, textarea, select')) field.disabled = extras.hidden;
+    }
+    showExtras();
+    fields.premium.addEventListener('change', showExtras);
+    const message = view.querySelector('.message');
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = form.querySelector('button');
+      button.disabled = true;
+      message.textContent = 'Salvando…';
+      const {status, description, photo, review, stars, premium} = fields;
+      const data = {id:Number(profile.id),status:status.value,description:description.value,
+        photo:photo.value,review:premium.checked ? review.value : '',stars:Number(stars.value),premium:premium.checked};
+      try {
+        const response = await fetch(endpoint, {method:'POST',
+          headers:{'Content-Type':'application/json','X-Admin-Request':'1'},body:JSON.stringify(data)});
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Falha ao salvar.');
+        Object.assign(profile, {status:data.status,premium:data.premium,description:data.description,photo:data.photo});
+        const entries = JSON.parse(profile.reviews);
+        if (data.review.trim()) entries.push({stars:data.stars,text:data.review.trim()});
+        profile.reviews = JSON.stringify(entries);
+        summary.textContent = title(profile);
+        review.value = '';
+        reviews.textContent = result.reviews + ' avaliação(ões) registrada(s)';
+        message.textContent = result.message;
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+    return view;
+  }));
+}
+
+async function load() {
+  try {
+    const response = await fetch(endpoint + '?dados=1', {cache:'no-store'});
+    if (!response.ok) throw new Error();
+    providers = (await response.json()).providers;
+    byId('search').addEventListener('input', render);
+    byId('status').addEventListener('change', render);
+    render();
+  } catch {
+    byId('feedback').textContent = 'Não foi possível carregar os cadastros. Recarregue a página.';
+  }
+}
+load();
+</script>
+</html>
