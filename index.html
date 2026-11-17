@@ -293,8 +293,10 @@ function render() {
   const service = byId('service').value;
   const order = byId('order').value;
   const query = normalize(byId('search').value.trim());
+  const searching = Boolean(query || group || service);
   const matches = providers.filter(profile =>
-    (!group || groups[group].includes(profile.category))
+    (searching || profile.premium)
+    && (!group || groups[group].includes(profile.category))
     && (!service || profile.category === service)
     && (!byId('rated').checked || reviewCount(profile))
     && (normalize(profile.name).includes(query) || normalize(profile.category).includes(query)));
@@ -303,7 +305,9 @@ function render() {
     if (order === 'reviews') return reviewCount(b) - reviewCount(a) || average(b) - average(a) || compareNames(a, b);
     return compareNames(a, b);
   });
-  byId('results').textContent = matches.length ? '' : 'Nenhum profissional encontrado.';
+  byId('results').textContent = matches.length
+    ? (searching ? '' : 'Perfis em destaque. Pesquise um nome ou serviço para ver mais profissionais.')
+    : (searching ? 'Nenhum profissional encontrado.' : 'Nenhum perfil em destaque. Pesquise um nome ou serviço para ver profissionais.');
   byId('cards').replaceChildren(...matches.map(profile => {
     const card = element('article');
     if (profile.photo) {
