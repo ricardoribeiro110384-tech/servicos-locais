@@ -179,6 +179,24 @@ class AdminTests(unittest.TestCase):
             with run_server(admin.handler) as port:
                 self.assertEqual(request(port, "GET", "/api/admin", headers=self.basic("12345"))[0], 503)
 
+    def test_existing_strong_password_with_legacy_short_recovery_secret(self):
+        import hashlib
+        legacy_secret = "segredo-curto"
+        new_password = "senha-redefinida-16"
+        salt = b"e" * 16
+        fingerprint = hashlib.sha256(legacy_secret.encode()).hexdigest()
+        with self.connect() as db:
+            db.execute(
+                "INSERT INTO admin_credential (id, recovery_fingerprint, salt, password_hash) VALUES (?, ?, ?, ?)",
+                (1, fingerprint, salt.hex(), admin.handler.hash_password(new_password, salt)),
+            )
+        with mock.patch.dict(os.environ, {"ADMIN_PASSWORD": legacy_secret}):
+            with run_server(admin.handler) as port:
+                self.assertEqual(request(port, "GET", "/api/admin?dados=1",
+                                         headers=self.basic(new_password))[0], 200)
+                self.assertEqual(request(port, "GET", "/api/admin?dados=1",
+                                         headers=self.basic(legacy_secret))[0], 401)
+
     def test_password_change_uses_hash_and_invalidates_old_password(self):
         with run_server(admin.handler) as port:
             status, _ = request(port, "POST", "/api/admin?senha=1",
