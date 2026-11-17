@@ -17,7 +17,9 @@ summary{cursor:pointer;font-weight:650}
 label{display:block;margin:10px 0}
 input,select,textarea,button{font:inherit;border:1px solid #849c90;padding:8px;border-radius:8px}
 input:not([type=checkbox]),select,textarea{width:100%;display:block}
+.delete-provider{margin-left:8px}
 button{background:#176342;color:white;cursor:pointer}
+button.delete-provider{background:#a12626}
 a{color:#176342}
 </style>
 <header><nav><strong>Serviços Locais</strong><a href="/">Abrir catálogo</a></nav></header>
@@ -54,6 +56,7 @@ a{color:#176342}
 <p class="reviews"></p>
 </div>
 <button>Salvar alterações</button>
+<button type="button" class="delete-provider">Excluir prestador</button>
 <p class="message" role="status"></p>
 </form></details></article>
 </template>
@@ -96,10 +99,34 @@ function render() {
     showExtras();
     fields.premium.addEventListener('change', showExtras);
     const message = view.querySelector('.message');
+    const remove = view.querySelector('.delete-provider');
+    const save = form.querySelector('button[type="submit"], button:not([type])');
+    remove.addEventListener('click', async () => {
+      if (!window.confirm('Excluir definitivamente o cadastro de ' + profile.name + '?')) return;
+      remove.disabled = true;
+      save.disabled = true;
+      message.textContent = 'Excluindo…';
+      try {
+        const response = await fetch(endpoint + '?excluir=1', {method:'POST',
+          headers:{'Content-Type':'application/json','X-Admin-Request':'1'},
+          body:JSON.stringify({id:Number(profile.id)})});
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Falha ao excluir.');
+        providers = providers.filter(item => item.id !== profile.id);
+        render();
+        byId('feedback').textContent = result.message;
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        remove.disabled = false;
+        save.disabled = false;
+      }
+    });
     form.addEventListener('submit', async event => {
       event.preventDefault();
-      const button = form.querySelector('button');
+      const button = save;
       button.disabled = true;
+      remove.disabled = true;
       message.textContent = 'Salvando…';
       const {status, description, photo, review, stars, premium} = fields;
       const data = {id:Number(profile.id),status:status.value,description:description.value,
@@ -121,6 +148,7 @@ function render() {
         message.textContent = error.message;
       } finally {
         button.disabled = false;
+        remove.disabled = false;
       }
     });
     return view;
