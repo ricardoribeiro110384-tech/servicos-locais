@@ -53,8 +53,13 @@ Os comandos administrativos do Python atuam somente no banco local.
 
 ### Painel administrativo
 
-Acesse `/admin` no endereço de produção. O navegador solicita o usuário
-`admin` e a senha da variável `ADMIN_PASSWORD`, configurada na Vercel.
-Defina uma senha aleatória e exclusiva e faça uma nova publicação após
-alterá-la. Pelo painel, é possível aprovar ou ocultar cadastros e gerenciar
-os dados do plano pago.
+Acesse `/admin` e entre com o usuário `admin`. Se nunca trocou a senha
+no painel, use o valor de `ADMIN_PASSWORD` da publicação de produção.
+
+Para trocar a senha, abra **Alterar senha do administrador**, informe a senha
+atual e escolha uma nova de pelo menos 15 caracteres. Após salvar, entre de
+novo com a nova senha. A senha escolhida no painel é armazenada como hash.
+
+Se esquecer a senha, defina um valor novo e exclusivo em `ADMIN_PASSWORD`
+na Vercel e faça uma nova publicação de produção. Use esse valor para entrar
+e, depois, escolha uma senha pelo painel.
