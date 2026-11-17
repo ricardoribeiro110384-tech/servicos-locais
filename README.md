@@ -50,3 +50,11 @@ UPDATE providers SET status = 'active' WHERE id = 123 AND status = 'pending';
 
 A ativação de plano pago e a edição dos dados premium são manuais, no banco.
 Os comandos administrativos do Python atuam somente no banco local.
+
+### Painel administrativo
+
+Acesse `/admin` no endereço de produção. O navegador solicita o usuário
+`admin` e a senha da variável `ADMIN_PASSWORD`, configurada na Vercel.
+Defina uma senha aleatória e exclusiva e faça uma nova publicação após
+alterá-la. Pelo painel, é possível aprovar ou ocultar cadastros e gerenciar
+os dados do plano pago.
