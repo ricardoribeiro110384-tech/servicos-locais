@@ -72,10 +72,14 @@ Antes de publicar uma versão que inclua `security.py`, execute
 **Atenção:** sem esta migração, o cadastro e o painel administrativo podem
 retornar erro 500. Faça a migração primeiro e depois publique a aplicação.
 
-Na Vercel, configure `ADMIN_PASSWORD` com uma senha forte de **pelo menos
-15 caracteres** (até 512 bytes em UTF-8). Se a configuração atual for mais
-curta, substitua-a **antes** de publicar esta atualização. A alteração do
-valor do ambiente redefine a senha do painel conforme o procedimento acima.
+Na Vercel, mantenha `ADMIN_PASSWORD` como segredo forte de **pelo menos
+15 caracteres** (até 512 bytes em UTF-8) para recuperação segura. Se o
+administrador já redefiniu sua senha pelo painel, essa senha forte continuará
+válida mesmo quando o segredo de recuperação anterior tiver menos de 15 caracteres.
+Sem senha redefinida armazenada, o segredo inicial de menos de 15 caracteres
+não permite acesso e deverá ser substituído na Vercel. **Alterar
+`ADMIN_PASSWORD` redefine a senha administrativa**, conforme o procedimento acima;
+não faça isso sem necessidade.
 
 Opcionalmente, configure `THROTTLE_SECRET` com um segredo aleatório longo
 para separar a chave usada pelo limitador de acessos da senha administrativa.
