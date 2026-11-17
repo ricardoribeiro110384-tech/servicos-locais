@@ -25,8 +25,8 @@ class handler(Handler):
 
     def authorize(self):
         password = os.environ.get("ADMIN_PASSWORD")
-        if not valid_admin_password(password):
-            self.json_reply(503, {"error": "Configure ADMIN_PASSWORD com pelo menos 15 caracteres na Vercel."})
+        if not password:
+            self.json_reply(503, {"error": "Configure ADMIN_PASSWORD na Vercel."})
             return False
         self.recovery_fingerprint = hashlib.sha256(password.encode()).hexdigest()
         key = throttle_key("admin", request_ip(self))
@@ -38,6 +38,13 @@ class handler(Handler):
                 "SELECT salt, password_hash FROM admin_credential WHERE id = 1 AND recovery_fingerprint = ?",
                 (self.recovery_fingerprint,),
             ).fetchone()
+        # Preserve an existing strong password changed in the admin panel even
+        # when the legacy recovery secret in Vercel is shorter than 15 chars.
+        # The recovery secret itself is only accepted as an initial password
+        # when it meets the new minimum length.
+        if credential is None and not valid_admin_password(password):
+            self.json_reply(503, {"error": "Configure ADMIN_PASSWORD com pelo menos 15 caracteres na Vercel."})
+            return False
         try:
             scheme, value = self.headers.get("Authorization", "").split(" ", 1)
             user, supplied = base64.b64decode(value, validate=True).decode().split(":", 1)
