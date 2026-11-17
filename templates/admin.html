@@ -23,6 +23,16 @@ a{color:#176342}
 <header><nav><strong>Serviços Locais</strong><a href="/">Abrir catálogo</a></nav></header>
 <main>
 <h1>Administrar prestadores</h1>
+<details>
+<summary>Alterar senha do administrador</summary>
+<form id="password-form">
+<label>Senha atual<input name="current" type="password" autocomplete="current-password" required></label>
+<label>Nova senha<input name="password" type="password" autocomplete="new-password" minlength="15" required></label>
+<label>Repita a nova senha<input name="confirmation" type="password" autocomplete="new-password" minlength="15" required></label>
+<button>Alterar senha</button>
+<p id="password-feedback" role="status"></p>
+</form>
+</details>
 <div class="filters">
 <label>Buscar por nome, telefone ou serviço<input id="search" type="search"></label>
 <label>Situação<select id="status"><option value="">Todos</option><option value="pending">Pendentes</option><option value="active">Publicados</option><option value="hidden">Ocultos</option></select></label>
@@ -129,6 +139,31 @@ async function load() {
     byId('feedback').textContent = 'Não foi possível carregar os cadastros. Recarregue a página.';
   }
 }
+byId('password-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button');
+  const feedback = byId('password-feedback');
+  const {current, password, confirmation} = Object.fromEntries(new FormData(form));
+  if (password !== confirmation) {
+    feedback.textContent = 'As novas senhas precisam ser iguais.';
+    return;
+  }
+  button.disabled = true;
+  feedback.textContent = 'Alterando senha…';
+  try {
+    const response = await fetch(endpoint + '?senha=1', {method:'POST',
+      headers:{'Content-Type':'application/json','X-Admin-Request':'1'},
+      body:JSON.stringify({current,password})});
+    const result = await response.json();
+    feedback.textContent = result.message || result.error;
+    if (response.ok) form.reset();
+  } catch {
+    feedback.textContent = 'Não foi possível alterar a senha. Verifique sua sessão e tente novamente.';
+  } finally {
+    button.disabled = false;
+  }
+});
 load();
 </script>
 </html>
