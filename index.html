@@ -301,6 +301,8 @@ function render() {
     && (!byId('rated').checked || reviewCount(profile))
     && (normalize(profile.name).includes(query) || normalize(profile.category).includes(query)));
   matches.sort((a, b) => {
+    const planPriority = Number(Boolean(b.premium)) - Number(Boolean(a.premium));
+    if (planPriority) return planPriority;
     if (order === 'rating') return average(b) - average(a) || reviewCount(b) - reviewCount(a) || compareNames(a, b);
     if (order === 'reviews') return reviewCount(b) - reviewCount(a) || average(b) - average(a) || compareNames(a, b);
     return compareNames(a, b);
