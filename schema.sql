@@ -10,3 +10,10 @@ CREATE TABLE IF NOT EXISTS providers (
     reviews text NOT NULL DEFAULT '[]',
     UNIQUE (category, phone)
 );
+
+CREATE TABLE IF NOT EXISTS admin_credential (
+    id integer PRIMARY KEY CHECK (id = 1),
+    recovery_fingerprint text NOT NULL,
+    salt text NOT NULL,
+    password_hash text NOT NULL
+);
