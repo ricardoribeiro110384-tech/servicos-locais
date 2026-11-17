@@ -1,5 +1,7 @@
 import base64
+import hashlib
 import hmac
+import secrets
 import json
 import os
 from contextlib import closing
@@ -22,14 +24,58 @@ class handler(Handler):
         if not password:
             self.json_reply(503, {"error": "Acesso administrativo ainda não configurado."})
             return False
-        expected = "Basic " + base64.b64encode(f"admin:{password}".encode()).decode()
-        if hmac.compare_digest(self.headers.get("Authorization", "").encode(), expected.encode()):
-            return True
+        self.recovery_fingerprint = hashlib.sha256(password.encode()).hexdigest()
+        with closing(connect()) as db:
+            credential = db.execute(
+                "SELECT salt, password_hash FROM admin_credential WHERE id = 1 AND recovery_fingerprint = ?",
+                (self.recovery_fingerprint,),
+            ).fetchone()
+        try:
+            scheme, value = self.headers.get("Authorization", "").split(" ", 1)
+            user, supplied = base64.b64decode(value, validate=True).decode().split(":", 1)
+        except (ValueError, UnicodeError):
+            scheme, user, supplied = "", "", ""
+        if scheme.lower() == "basic" and user == "admin" and 0 < len(supplied.encode()) <= 512:
+            if credential:
+                valid = hmac.compare_digest(
+                    self.hash_password(supplied, bytes.fromhex(credential["salt"])),
+                    credential["password_hash"],
+                )
+            else:
+                valid = hmac.compare_digest(supplied.encode(), password.encode())
+            if valid:
+                self.current_password = supplied
+                return True
         self.send_response(401)
         self.send_header("WWW-Authenticate", 'Basic realm="Servicos Locais Admin", charset="UTF-8"')
         self.send_header("Content-Length", "0")
         self.end_headers()
         return False
+
+    @staticmethod
+    def hash_password(password, salt):
+        return hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 600_000).hex()
+
+    def change_password(self, data):
+        current = data.get("current")
+        password = data.get("password")
+        if not isinstance(current, str) or not hmac.compare_digest(
+            current.encode(), self.current_password.encode()
+        ):
+            self.json_reply(400, {"error": "A senha atual está incorreta."})
+            return
+        if (not isinstance(password, str) or len(password) < 15
+                or len(password.encode()) > 512 or password == current):
+            self.json_reply(400, {"error": "Use uma senha diferente com pelo menos 15 caracteres e até 512 bytes."})
+            return
+        salt = secrets.token_bytes(16)
+        with closing(connect()) as db, db:
+            db.execute("""INSERT INTO admin_credential (id, recovery_fingerprint, salt, password_hash)
+                VALUES (1, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET
+                recovery_fingerprint = EXCLUDED.recovery_fingerprint,
+                salt = EXCLUDED.salt, password_hash = EXCLUDED.password_hash""",
+                       (self.recovery_fingerprint, salt.hex(), self.hash_password(password, salt)))
+        self.json_reply(200, {"message": "Senha alterada. Abra o painel em uma janela anônima e entre com a nova senha."})
 
     def do_GET(self):
         if not self.authorize():
@@ -56,6 +102,11 @@ class handler(Handler):
             if not 0 < size <= 8192:
                 raise ValueError
             data = json.loads(self.rfile.read(size))
+            if not isinstance(data, dict):
+                raise ValueError
+            if urlsplit(self.path).query == "senha=1":
+                self.change_password(data)
+                return
             provider_id = data["id"]
             status, premium = data["status"], data["premium"]
             description, photo = data["description"].strip(), data["photo"].strip()
