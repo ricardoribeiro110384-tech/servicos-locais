@@ -12,6 +12,8 @@ from psycopg.errors import ForeignKeyViolation
 
 from app import Handler
 from api.catalogo import connect
+from security import (attempts_exceeded, clear_attempts, record_attempt,
+                      request_ip, throttle_key, valid_admin_password)
 
 
 class handler(Handler):
@@ -24,14 +26,25 @@ class handler(Handler):
     def authorize(self):
         password = os.environ.get("ADMIN_PASSWORD")
         if not password:
-            self.json_reply(503, {"error": "Acesso administrativo ainda não configurado."})
+            self.json_reply(503, {"error": "Configure ADMIN_PASSWORD na Vercel."})
             return False
         self.recovery_fingerprint = hashlib.sha256(password.encode()).hexdigest()
+        key = throttle_key("admin", request_ip(self))
         with closing(connect()) as db:
+            if attempts_exceeded(db, key, 8, 900):
+                self.json_reply(429, {"error": "Muitas tentativas de acesso. Tente novamente mais tarde."})
+                return False
             credential = db.execute(
                 "SELECT salt, password_hash FROM admin_credential WHERE id = 1 AND recovery_fingerprint = ?",
                 (self.recovery_fingerprint,),
             ).fetchone()
+        # Preserve an existing strong password changed in the admin panel even
+        # when the legacy recovery secret in Vercel is shorter than 15 chars.
+        # The recovery secret itself is only accepted as an initial password
+        # when it meets the new minimum length.
+        if credential is None and not valid_admin_password(password):
+            self.json_reply(503, {"error": "Configure ADMIN_PASSWORD com pelo menos 15 caracteres na Vercel."})
+            return False
         try:
             scheme, value = self.headers.get("Authorization", "").split(" ", 1)
             user, supplied = base64.b64decode(value, validate=True).decode().split(":", 1)
@@ -46,8 +59,12 @@ class handler(Handler):
             else:
                 valid = hmac.compare_digest(supplied.encode(), password.encode())
             if valid:
+                with closing(connect()) as db, db:
+                    clear_attempts(db, key)
                 self.current_password = supplied
                 return True
+        with closing(connect()) as db, db:
+            record_attempt(db, key, 900)
         self.send_response(401)
         self.send_header("WWW-Authenticate", 'Basic realm="Servicos Locais Admin", charset="UTF-8"')
         self.send_header("Content-Length", "0")
