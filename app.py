@@ -10,7 +10,10 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
 DB = os.environ.get("SERVICOS_DB", str(ROOT / "servicos.sqlite3"))
-CATEGORIES = ("Ar-condicionado", "Eletricista", "Encanador", "Pintura", "Outros")
+# Read the same taxonomy the frontend can display while the API is unavailable.
+HTML = (ROOT / "index.html").read_text(encoding="utf-8")
+GROUPS = json.loads(HTML.split('id="service-groups">', 1)[1].split("</script>", 1)[0])
+CATEGORIES = tuple(service for services in GROUPS.values() for service in services)
 
 
 def connect():
@@ -45,7 +48,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlsplit(self.path).path
         if path == "/":
-            self.reply(200, (ROOT / "index.html").read_bytes(), "text/html; charset=utf-8")
+            self.reply(200, HTML.encode("utf-8"), "text/html; charset=utf-8")
         elif path == "/api/catalogo":
             with closing(connect()) as db:
                 rows = db.execute("SELECT * FROM providers WHERE status = 'active' ORDER BY name COLLATE NOCASE")
