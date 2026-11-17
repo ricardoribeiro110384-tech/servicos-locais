@@ -17,3 +17,10 @@ CREATE TABLE IF NOT EXISTS admin_credential (
     salt text NOT NULL,
     password_hash text NOT NULL
 );
+
+-- Shared throttles persist across Vercel serverless instances.
+CREATE TABLE IF NOT EXISTS security_throttle (
+    throttle_key text PRIMARY KEY,
+    window_start bigint NOT NULL,
+    attempts integer NOT NULL
+);

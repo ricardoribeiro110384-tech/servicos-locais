@@ -8,6 +8,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from security import record_attempt, request_ip, throttle_key
+
 ROOT = Path(__file__).resolve().parent
 DB = os.environ.get("SERVICOS_DB", str(ROOT / "servicos.sqlite3"))
 # Read the same taxonomy the frontend can display while the API is unavailable.
@@ -30,6 +32,11 @@ def init():
             premium INTEGER NOT NULL DEFAULT 0, description TEXT NOT NULL DEFAULT '',
             photo TEXT NOT NULL DEFAULT '', reviews TEXT NOT NULL DEFAULT '[]',
             UNIQUE(category, phone)
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS security_throttle (
+            throttle_key TEXT PRIMARY KEY,
+            window_start BIGINT NOT NULL,
+            attempts INTEGER NOT NULL
         )""")
 
 
@@ -84,6 +91,12 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError
         except (ValueError, AttributeError, KeyError, TypeError):
             self.json_reply(400, dict(error="Confira o nome, o telefone com DDD e a autorização de publicação."))
+            return
+        # Store the throttle attempt in a separate committed transaction, even on duplicates.
+        with closing(self.database()) as db, db:
+            attempts = record_attempt(db, throttle_key("cadastro", request_ip(self)), 3600)
+        if attempts > 12:
+            self.json_reply(429, dict(error="Muitos cadastros deste endereço. Tente novamente mais tarde."))
             return
         try:
             with closing(self.database()) as db, db:

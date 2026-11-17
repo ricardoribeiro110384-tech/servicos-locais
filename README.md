@@ -63,3 +63,38 @@ novo com a nova senha. A senha escolhida no painel é armazenada como hash.
 Se esquecer a senha, defina um valor novo e exclusivo em `ADMIN_PASSWORD`
 na Vercel e faça uma nova publicação de produção. Use esse valor para entrar
 e, depois, escolha uma senha pelo painel.
+
+
+## Segurança e testes (fase 1)
+
+Antes de publicar uma versão que inclua `security.py`, execute
+`migrations/002_security_throttle.sql` no editor SQL do banco Neon correspondente.
+**Atenção:** sem esta migração, o cadastro e o painel administrativo podem
+retornar erro 500. Faça a migração primeiro e depois publique a aplicação.
+
+Na Vercel, configure `ADMIN_PASSWORD` com uma senha forte de **pelo menos
+15 caracteres** (até 512 bytes em UTF-8). Se a configuração atual for mais
+curta, substitua-a **antes** de publicar esta atualização. A alteração do
+valor do ambiente redefine a senha do painel conforme o procedimento acima.
+
+Opcionalmente, configure `THROTTLE_SECRET` com um segredo aleatório longo
+para separar a chave usada pelo limitador de acessos da senha administrativa.
+Não registre essas variáveis no GitHub.
+
+O sistema limita **8 tentativas incorretas de acesso administrativo a cada
+15 minutos por endereço IP** e **12 solicitações válidas de cadastro por hora
+por IP**. O limitador usa o PostgreSQL na Vercel e o SQLite local, não memória
+volátil. Em produção, o IP é obtido do cabeçalho atribuído pela Vercel.
+A limitação por IP é uma camada inicial, não substitui WAF, monitoramento ou
+um serviço de autenticação especializado.
+
+Para executar os testes localmente:
+
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+```
+
+O workflow `.github/workflows/tests.yml` executa esses testes em pushes
+e pull requests. As mudanças de segurança devem ser validadas em uma branch
+antes de integrar à versão em produção.
