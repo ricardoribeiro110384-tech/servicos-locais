@@ -39,8 +39,9 @@ def request(port, method, path, body=None, headers=None):
     response = connection.getresponse()
     raw = response.read()
     status = response.status
+    kind = response.getheader("Content-Type", "")
     connection.close()
-    return status, json.loads(raw) if raw else {}
+    return status, json.loads(raw) if raw and "application/json" in kind else {}
 
 
 class SecurityHelperTests(unittest.TestCase):
