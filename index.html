@@ -26,6 +26,10 @@ label{display:block;margin:12px 0}
 input:not([type=checkbox]),select{display:block;width:100%;font:inherit;border:1px solid #8fa99a;border-radius:8px;padding:8px;background:white}
 small{color:#53685e}
 blockquote{margin:12px 0;border-left:3px solid #bbccbf;padding-left:10px}
+.home-showcase{margin:34px 0}
+.showcase-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:14px}
+.showcase-grid img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:9px;margin-bottom:10px}
+.showcase-grid h3{margin:4px 0}
 </style>
 <header><nav><strong>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
 <main>
@@ -46,6 +50,16 @@ blockquote{margin:12px 0;border-left:3px solid #bbccbf;padding-left:10px}
 <p id="connection" role="status"></p>
 <p id="results" role="status">Carregando profissionais…</p>
 <div id="cards" class="grid"></div>
+</section>
+<section class="home-showcase" aria-labelledby="gallery-title">
+<h2 id="gallery-title">Galeria de trabalhos</h2>
+<p id="gallery-empty" hidden>Nenhuma foto de trabalho publicada ainda.</p>
+<div id="gallery" class="showcase-grid"></div>
+</section>
+<section class="home-showcase" aria-labelledby="reviews-title">
+<h2 id="reviews-title">Avaliações de clientes</h2>
+<p id="reviews-empty" hidden>Nenhuma avaliação publicada ainda.</p>
+<div id="home-reviews" class="showcase-grid"></div>
 </section>
 <section class="form" id="cadastro">
 <h2>Cadastre seu serviço gratuitamente</h2>
@@ -249,6 +263,30 @@ function element(tag, value) {
   if (value !== undefined) node.textContent = value;
   return node;
 }
+function renderShowcases() {
+  const paid = providers.filter(profile => profile.premium);
+  const gallery = paid.filter(profile => profile.photo);
+  const reviews = paid.flatMap(profile =>
+    (profile.reviews || []).map(review => ({profile, review})));
+  byId('gallery-empty').hidden = gallery.length > 0;
+  byId('reviews-empty').hidden = reviews.length > 0;
+
+  byId('gallery').replaceChildren(...gallery.map(profile => {
+    const card = element('article');
+    const photo = element('img');
+    photo.src = profile.photo;
+    photo.alt = 'Trabalho de ' + profile.name;
+    photo.loading = 'lazy';
+    card.append(photo, element('h3', profile.name), element('small', profile.category));
+    return card;
+  }));
+  byId('home-reviews').replaceChildren(...reviews.map(({profile, review}) => {
+    const card = element('article');
+    card.append(element('h3', profile.name), element('small', profile.category),
+      element('p', review.stars + ' de 5 estrelas'), element('blockquote', review.text));
+    return card;
+  }));
+}
 function render() {
   if (!connected) return;
   const group = byId('group').value;
@@ -300,6 +338,7 @@ async function load() {
     if (!response.ok) throw new Error();
     const data = await response.json();
     providers = data.providers;
+    renderShowcases();
     connected = true;
     submit.disabled = false;
     render();
