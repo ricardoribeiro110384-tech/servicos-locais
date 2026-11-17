@@ -8,6 +8,8 @@ from contextlib import closing
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from psycopg.errors import ForeignKeyViolation
+
 from app import Handler
 from api.catalogo import connect
 
@@ -90,6 +92,22 @@ class handler(Handler):
                 ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, id DESC"""))
         self.json_reply(200, {"providers": rows})
 
+    def delete_provider(self, provider_id):
+        if type(provider_id) is not int or not 0 < provider_id < 2**63:
+            self.json_reply(400, {"error": "Cadastro inválido."})
+            return
+        try:
+            with closing(connect()) as db, db:
+                deleted = db.execute("DELETE FROM providers WHERE id = ? RETURNING id",
+                                     (provider_id,)).fetchone()
+        except ForeignKeyViolation:
+            self.json_reply(409, {"error": "Este cadastro tem registros vinculados. Você pode ocultá-lo."})
+            return
+        if deleted is None:
+            self.json_reply(404, {"error": "Cadastro não encontrado."})
+            return
+        self.json_reply(200, {"message": "Prestador excluído."})
+
     def do_POST(self):
         if not self.authorize():
             return
@@ -108,6 +126,9 @@ class handler(Handler):
                 self.change_password(data)
                 return
             provider_id = data["id"]
+            if urlsplit(self.path).query == "excluir=1":
+                self.delete_provider(provider_id)
+                return
             status, premium = data["status"], data["premium"]
             description, photo = data["description"].strip(), data["photo"].strip()
             review, stars = data["review"].strip(), data["stars"]
