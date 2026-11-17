@@ -34,6 +34,8 @@ def init():
 
 
 class Handler(BaseHTTPRequestHandler):
+    database = staticmethod(connect)
+    duplicate_error = sqlite3.IntegrityError
     def reply(self, status, body, kind):
         self.send_response(status)
         self.send_header("Content-Type", kind)
@@ -50,7 +52,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/":
             self.reply(200, HTML.encode("utf-8"), "text/html; charset=utf-8")
         elif path == "/api/catalogo":
-            with closing(connect()) as db:
+            with closing(self.database()) as db:
                 rows = db.execute("SELECT * FROM providers WHERE status = 'active' ORDER BY name COLLATE NOCASE")
                 providers = []
                 for row in rows:
@@ -84,10 +86,10 @@ class Handler(BaseHTTPRequestHandler):
             self.json_reply(400, dict(error="Confira o nome, o telefone com DDD e a autorização de publicação."))
             return
         try:
-            with closing(connect()) as db, db:
+            with closing(self.database()) as db, db:
                 db.execute("INSERT INTO providers(category, name, phone) VALUES (?, ?, ?)",
                            (category, name, phone))
-        except sqlite3.IntegrityError:
+        except self.duplicate_error:
             self.json_reply(409, dict(error="Este telefone já foi cadastrado nesta categoria."))
             return
         self.json_reply(201, dict(message="Cadastro recebido. Seu perfil será publicado após a conferência do contato."))
