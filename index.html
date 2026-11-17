@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serviços Locais | São Raimundo Nonato</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f7f8f3;color:#172c25;font:16px/1.55 system-ui,sans-serif}
+main,nav{width:min(1080px,calc(100% - 36px));margin:auto}
+header{background:#173d32;color:#fff}
+nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0}
+nav a{color:#fff}
+.hero{padding:58px 0 42px}
+h1{font-size:clamp(2.6rem,7vw,5rem);letter-spacing:-.075em;line-height:1;margin:8px 0 20px;max-width:720px}
+h2,h3,p{margin:0 0 10px}
+.place{color:#53685e}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}
+button,.contact{border:1px solid #aac0b3;border-radius:9px;background:white;color:#173d32;padding:9px 14px;font:inherit;cursor:pointer}
+button[aria-pressed=true],button[type=submit],.contact{background:#176342;color:white;border-color:#176342}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+article,section.form{background:white;border:1px solid #d7e2da;border-radius:16px;padding:22px}
+article img{width:100%;max-height:220px;object-fit:cover;border-radius:9px}
+.contact{display:inline-block;text-decoration:none;margin-top:8px}
+section.form{max-width:640px;margin:46px 0}
+label{display:block;margin:12px 0}
+input:not([type=checkbox]),select{display:block;width:100%;font:inherit;border:1px solid #8fa99a;border-radius:8px;padding:8px;background:white}
+small{color:#53685e}
+blockquote{margin:12px 0;border-left:3px solid #bbccbf;padding-left:10px}
+</style>
+<header><nav><strong>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
+<main>
+<section class="hero">
+<p class="place">São Raimundo Nonato · PI</p>
+<h1>Encontre quem faz o serviço.</h1>
+<p>Escolha uma categoria e fale direto com um profissional pelo WhatsApp.</p>
+</section>
+<section aria-labelledby="titulo">
+<h2 id="titulo">Buscar profissionais</h2>
+<label>Nome do profissional<input id="search" type="search"></label>
+<div id="filters" class="filters" aria-label="Categorias"></div>
+<p id="results" role="status">Carregando profissionais…</p>
+<div id="cards" class="grid"></div>
+</section>
+<section class="form" id="cadastro">
+<h2>Cadastre seu serviço gratuitamente</h2>
+<p>Seu anúncio mostra seu nome e o botão para abrir uma conversa. O perfil pago pode incluir foto, descrição e avaliações.</p>
+<form id="register">
+<label>Serviço que você oferece<select required name="category"><option value="">Selecione</option></select></label>
+<label>Nome profissional<input name="name" required minlength="2" maxlength="80" autocomplete="name"></label>
+<label>WhatsApp com DDD<input name="phone" required type="tel" maxlength="25" autocomplete="tel" placeholder="(89) 99999-9999"></label>
+<label><input name="consent" type="checkbox" required> Autorizo a publicação do meu nome e do contato profissional neste catálogo.</label>
+<button type="submit" disabled>Enviar cadastro gratuito</button>
+<p id="feedback" role="status"></p>
+</form>
+</section>
+</main>
+<script>
+const byId = id => document.getElementById(id);
+const form = byId('register');
+const submit = form.querySelector('button');
+let providers = [];
+let category = '';
+const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function element(tag, value) {
+  const node = document.createElement(tag);
+  if (value !== undefined) node.textContent = value;
+  return node;
+}
+function render() {
+  const matches = providers.filter(profile => (!category || profile.category === category)
+    && normalize(profile.name).includes(normalize(byId('search').value.trim())));
+  byId('results').textContent = matches.length ? '' : 'Nenhum profissional encontrado.';
+  byId('cards').replaceChildren(...matches.map(profile => {
+    const card = element('article');
+    if (profile.photo) {
+      const photo = element('img');
+      photo.src = profile.photo;
+      photo.alt = 'Foto do perfil de ' + profile.name;
+      photo.loading = 'lazy';
+      card.append(photo);
+    }
+    card.append(element('small', profile.category), element('h3', profile.name));
+    if (profile.description) card.append(element('p', profile.description));
+    for (const review of profile.reviews || []) {
+      card.append(element('blockquote', review.stars + '/5 · ' + review.text));
+    }
+    const link = element('a', 'Chamar no WhatsApp');
+    link.className = 'contact';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.href = 'https://wa.me/55' + profile.phone + '?text='
+      + encodeURIComponent('Olá! Encontrei seu contato no Serviços Locais. Gostaria de pedir um orçamento.');
+    card.append(link);
+    return card;
+  }));
+}
+async function load() {
+  try {
+    const response = await fetch('/api/catalogo');
+    if (!response.ok) throw new Error();
+    const data = await response.json();
+    providers = data.providers;
+    for (const value of ['', ...data.categories]) {
+      const button = element('button', value || 'Todos');
+      button.setAttribute('aria-pressed', String(!value));
+      button.addEventListener('click', () => {
+        category = value;
+        for (const filter of byId('filters').children) {
+          filter.setAttribute('aria-pressed', String(filter === button));
+        }
+        render();
+      });
+      byId('filters').append(button);
+      if (value) form.elements.category.add(new Option(value, value));
+    }
+    byId('search').addEventListener('input', render);
+    submit.disabled = false;
+    render();
+  } catch {
+    byId('results').textContent = 'Não foi possível carregar o catálogo. Recarregue a página para tentar novamente.';
+  }
+}
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  submit.disabled = true;
+  byId('feedback').textContent = 'Enviando…';
+  const data = Object.fromEntries(new FormData(form));
+  data.consent = form.elements.consent.checked;
+  try {
+    const response = await fetch('/api/cadastro', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    byId('feedback').textContent = result.message || result.error;
+    if (response.ok) form.reset();
+  } catch {
+    byId('feedback').textContent = 'Falha na conexão. Tente enviar novamente.';
+  } finally {
+    submit.disabled = false;
+  }
+});
+load();
+</script>
+</html>
