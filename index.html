@@ -14,7 +14,7 @@ nav a{color:#fff}
 h1{font-size:clamp(2.6rem,7vw,5rem);letter-spacing:-.075em;line-height:1;margin:8px 0 20px;max-width:720px}
 h2,h3,p{margin:0 0 10px}
 .place{color:#53685e}
-.filters{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px;margin:12px 0}
 button,.contact{border:1px solid #aac0b3;border-radius:9px;background:white;color:#173d32;padding:9px 14px;font:inherit;cursor:pointer}
 button[aria-pressed=true],button[type=submit],.contact{background:#176342;color:white;border-color:#176342}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
@@ -36,8 +36,14 @@ blockquote{margin:12px 0;border-left:3px solid #bbccbf;padding-left:10px}
 </section>
 <section aria-labelledby="titulo">
 <h2 id="titulo">Buscar profissionais</h2>
-<label>Nome do profissional<input id="search" type="search"></label>
-<div id="filters" class="filters" aria-label="Categorias"></div>
+<label>Nome do profissional ou serviço<input id="search" type="search"></label>
+<div class="filters">
+<label>Categoria<select id="group"><option value="">Todas as categorias</option></select></label>
+<label>Serviço<select id="service"><option value="">Todos os serviços</option></select></label>
+<label>Ordenar por<select id="order"><option value="name">Nome (A–Z)</option><option value="rating">Mais bem avaliados</option><option value="reviews">Mais avaliações</option></select></label>
+</div>
+<label><input id="rated" type="checkbox"> Somente profissionais com avaliações</label>
+<p id="connection" role="status"></p>
 <p id="results" role="status">Carregando profissionais…</p>
 <div id="cards" class="grid"></div>
 </section>
@@ -54,12 +60,189 @@ blockquote{margin:12px 0;border-left:3px solid #bbccbf;padding-left:10px}
 </form>
 </section>
 </main>
+<script type="application/json" id="service-groups">{
+  "Casa, obras e manutenção": [
+    "Ar-condicionado",
+    "Eletricista",
+    "Encanador",
+    "Pintura",
+    "Pedreiro",
+    "Servente de obra",
+    "Gesseiro",
+    "Marceneiro",
+    "Carpinteiro",
+    "Serralheiro",
+    "Vidraceiro",
+    "Chaveiro",
+    "Telhados e calhas",
+    "Impermeabilização",
+    "Construção a seco",
+    "Montagem de móveis",
+    "Instalação de pisos e revestimentos",
+    "Marmoraria",
+    "Piscinas",
+    "Energia solar",
+    "Instalação de câmeras e alarmes",
+    "Manutenção de portões",
+    "Arquitetura",
+    "Engenharia civil",
+    "Design de interiores"
+  ],
+  "Limpeza e cuidados com imóveis": [
+    "Diarista",
+    "Faxina pós-obra",
+    "Limpeza comercial",
+    "Higienização de estofados",
+    "Limpeza de caixa d’água",
+    "Dedetização",
+    "Desentupimento",
+    "Jardinagem",
+    "Paisagismo",
+    "Poda de árvores"
+  ],
+  "Assistência técnica e informática": [
+    "Conserto de celular",
+    "Manutenção de computadores",
+    "Conserto de TV",
+    "Conserto de eletrodomésticos",
+    "Conserto de geladeira",
+    "Conserto de máquina de lavar",
+    "Manutenção de impressoras",
+    "Redes e Wi-Fi",
+    "Instalação de antenas",
+    "Criação de sites",
+    "Desenvolvimento de sistemas"
+  ],
+  "Veículos e transporte": [
+    "Mecânica automotiva",
+    "Mecânica de motos",
+    "Autoelétrica",
+    "Borracharia",
+    "Funilaria e pintura automotiva",
+    "Lavagem e detalhamento",
+    "Guincho",
+    "Fretes e mudanças",
+    "Motoboy e entregas",
+    "Transporte particular",
+    "Manutenção de bicicletas"
+  ],
+  "Beleza e bem-estar": [
+    "Cabeleireiro",
+    "Barbearia",
+    "Manicure e pedicure",
+    "Maquiagem",
+    "Design de sobrancelhas",
+    "Extensão de cílios",
+    "Depilação",
+    "Estética",
+    "Massagem",
+    "Personal trainer",
+    "Tatuagem"
+  ],
+  "Saúde e cuidados": [
+    "Psicologia",
+    "Fisioterapia",
+    "Nutrição",
+    "Fonoaudiologia",
+    "Odontologia",
+    "Enfermagem domiciliar",
+    "Cuidador de idosos",
+    "Babá",
+    "Terapia ocupacional"
+  ],
+  "Aulas e educação": [
+    "Reforço escolar",
+    "Aulas de idiomas",
+    "Aulas de música",
+    "Aulas de informática",
+    "Aulas de dança",
+    "Aulas de programação",
+    "Preparação para concursos",
+    "Aulas de esportes"
+  ],
+  "Eventos e alimentação": [
+    "Fotografia",
+    "Filmagem",
+    "Decoração de festas",
+    "Buffet",
+    "Confeitaria",
+    "Salgados e doces",
+    "Churrasqueiro",
+    "Garçom",
+    "DJ",
+    "Música ao vivo",
+    "Sonorização e iluminação",
+    "Cerimonial",
+    "Locação para eventos",
+    "Animação infantil",
+    "Marmitas e refeições"
+  ],
+  "Pets": [
+    "Banho e tosa",
+    "Veterinário",
+    "Adestramento",
+    "Passeio de cães",
+    "Hospedagem de pets",
+    "Cuidador de pets"
+  ],
+  "Serviços para empresas": [
+    "Contabilidade",
+    "Advocacia",
+    "Consultoria empresarial",
+    "Design gráfico",
+    "Gestão de redes sociais",
+    "Publicidade",
+    "Digitação e serviços administrativos",
+    "Tradução",
+    "Impressão e comunicação visual"
+  ],
+  "Rural e turismo": [
+    "Guia de turismo",
+    "Transporte turístico",
+    "Manutenção de máquinas agrícolas",
+    "Roçagem",
+    "Instalação de cercas",
+    "Irrigação",
+    "Serviços com trator",
+    "Topografia"
+  ],
+  "Costura e serviços pessoais": [
+    "Costura e ajustes",
+    "Confecção de roupas",
+    "Sapataria",
+    "Lavanderia",
+    "Organização residencial",
+    "Relojoaria"
+  ],
+  "Outros serviços": [
+    "Outros"
+  ]
+}</script>
 <script>
 const byId = id => document.getElementById(id);
 const form = byId('register');
 const submit = form.querySelector('button');
 let providers = [];
-let category = '';
+const groups = JSON.parse(byId('service-groups').textContent);
+let connected = false;
+const compareNames = (a, b) => a.name.localeCompare(b.name, 'pt-BR');
+function reviewCount(profile) {
+  return profile.reviews?.length || 0;
+}
+function average(profile) {
+  const count = reviewCount(profile);
+  return count ? profile.reviews.reduce((total, review) => total + review.stars, 0) / count : 0;
+}
+function fillServices(select, placeholder, group = '') {
+  select.replaceChildren(new Option(placeholder, ''));
+  for (const [label, services] of Object.entries(groups)) {
+    if (group && group !== label) continue;
+    const options = element('optgroup');
+    options.label = label;
+    for (const service of services) options.append(new Option(service, service));
+    select.append(options);
+  }
+}
 const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 function element(tag, value) {
   const node = document.createElement(tag);
@@ -67,8 +250,21 @@ function element(tag, value) {
   return node;
 }
 function render() {
-  const matches = providers.filter(profile => (!category || profile.category === category)
-    && normalize(profile.name).includes(normalize(byId('search').value.trim())));
+  if (!connected) return;
+  const group = byId('group').value;
+  const service = byId('service').value;
+  const order = byId('order').value;
+  const query = normalize(byId('search').value.trim());
+  const matches = providers.filter(profile =>
+    (!group || groups[group].includes(profile.category))
+    && (!service || profile.category === service)
+    && (!byId('rated').checked || reviewCount(profile))
+    && (normalize(profile.name).includes(query) || normalize(profile.category).includes(query)));
+  matches.sort((a, b) => {
+    if (order === 'rating') return average(b) - average(a) || reviewCount(b) - reviewCount(a) || compareNames(a, b);
+    if (order === 'reviews') return reviewCount(b) - reviewCount(a) || average(b) - average(a) || compareNames(a, b);
+    return compareNames(a, b);
+  });
   byId('results').textContent = matches.length ? '' : 'Nenhum profissional encontrado.';
   byId('cards').replaceChildren(...matches.map(profile => {
     const card = element('article');
@@ -80,6 +276,10 @@ function render() {
       card.append(photo);
     }
     card.append(element('small', profile.category), element('h3', profile.name));
+    if (reviewCount(profile)) {
+      card.append(element('p', average(profile).toLocaleString('pt-BR', {maximumFractionDigits: 1})
+        + '/5 · ' + reviewCount(profile) + (reviewCount(profile) === 1 ? ' avaliação' : ' avaliações')));
+    }
     if (profile.description) card.append(element('p', profile.description));
     for (const review of profile.reviews || []) {
       card.append(element('blockquote', review.stars + '/5 · ' + review.text));
@@ -100,24 +300,13 @@ async function load() {
     if (!response.ok) throw new Error();
     const data = await response.json();
     providers = data.providers;
-    for (const value of ['', ...data.categories]) {
-      const button = element('button', value || 'Todos');
-      button.setAttribute('aria-pressed', String(!value));
-      button.addEventListener('click', () => {
-        category = value;
-        for (const filter of byId('filters').children) {
-          filter.setAttribute('aria-pressed', String(filter === button));
-        }
-        render();
-      });
-      byId('filters').append(button);
-      if (value) form.elements.category.add(new Option(value, value));
-    }
-    byId('search').addEventListener('input', render);
+    connected = true;
     submit.disabled = false;
     render();
   } catch {
-    byId('results').textContent = 'Não foi possível carregar o catálogo. Recarregue a página para tentar novamente.';
+    byId('results').textContent = '';
+    byId('connection').textContent = 'Catálogo indisponível. Para consultar perfis e enviar cadastros, abra o site com o servidor conectado.';
+    byId('feedback').textContent = 'O envio de cadastros requer o servidor conectado.';
   }
 }
 form.addEventListener('submit', async event => {
@@ -139,6 +328,15 @@ form.addEventListener('submit', async event => {
     submit.disabled = false;
   }
 });
+for (const group of Object.keys(groups)) byId('group').add(new Option(group, group));
+fillServices(form.elements.category, 'Selecione um serviço');
+fillServices(byId('service'), 'Todos os serviços');
+byId('group').addEventListener('change', () => {
+  fillServices(byId('service'), 'Todos os serviços', byId('group').value);
+  render();
+});
+byId('search').addEventListener('input', render);
+for (const id of ['service', 'order', 'rated']) byId(id).addEventListener('change', render);
 load();
 </script>
 </html>
