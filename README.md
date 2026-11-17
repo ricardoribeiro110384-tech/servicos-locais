@@ -31,11 +31,22 @@ Em avaliação, insira somente feedback real de clientes. O comando de plano pag
 é manual. A opção de foto recebe uma URL HTTPS. Use uma URL vazia entre aspas
 para tirar a foto. Na volta ao gratuito, o site deixa de servir os dados extras.
 
-## Publicação
+## Publicação na Vercel com Neon
 
-Esta versão roda localmente. Para receber cadastros públicos, prepare uma
-implantação com HTTPS, armazenamento persistente, backup do SQLite e limitação
-de requisições. O servidor Python incluído é destinado a uso local e testes.
-A publicação dos perfis, a ativação do plano e as avaliações são administradas
-pelo terminal. A cobrança e o envio de avaliações pelo público ficam para uma
-etapa posterior.
+O catálogo público usa PostgreSQL. A versão local continua usando SQLite.
+
+1. Execute `schema.sql` no projeto dedicado do Neon.
+2. Configure `DATABASE_URL` como variável sensível de produção na Vercel.
+3. Publique os arquivos na Vercel. O HTML é servido na raiz e as funções
+   Python atendem `/api/catalogo` e `/api/cadastro`.
+
+Confira o contato e use o editor SQL do Neon para moderar os cadastros online.
+Substitua o ID de exemplo pelo ID do cadastro conferido.
+
+```sql
+SELECT id, category, name, phone, status FROM providers WHERE status = 'pending';
+UPDATE providers SET status = 'active' WHERE id = 123 AND status = 'pending';
+```
+
+A ativação de plano pago e a edição dos dados premium são manuais, no banco.
+Os comandos administrativos do Python atuam somente no banco local.
