@@ -1,7 +1,10 @@
 {
   "functions": {
     "api/*.py": {
-      "includeFiles": "index.html"
+      "includeFiles": "{index.html,templates/admin.html}"
     }
-  }
+  },
+  "rewrites": [
+    {"source": "/admin", "destination": "/api/admin"}
+  ]
 }
