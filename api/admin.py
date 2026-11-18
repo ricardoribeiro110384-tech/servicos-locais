@@ -164,6 +164,23 @@ class handler(Handler):
             if urlsplit(self.path).query == "senha=1":
                 self.change_password(data)
                 return
+            if urlsplit(self.path).query == "acesso=1":
+                from api.profissional import password_hash
+                provider_id, password = data["id"], data["password"]
+                if type(provider_id) is not int or not 0 < provider_id < 2**63 or not isinstance(password, str) or not 15 <= len(password) <= 128:
+                    raise ValueError
+                with closing(connect()) as db, db:
+                    profile = db.execute("SELECT phone FROM providers WHERE id=?", (provider_id,)).fetchone()
+                    if not profile:
+                        self.json_reply(404, {"error": "Prestador não encontrado."})
+                        return
+                    salt = secrets.token_bytes(16)
+                    db.execute("""INSERT INTO professional_accounts(phone,salt,password_hash) VALUES(?,?,?)
+                        ON CONFLICT(phone) DO UPDATE SET salt=EXCLUDED.salt,password_hash=EXCLUDED.password_hash""",
+                               (profile["phone"], salt.hex(), password_hash(password,salt)))
+                    db.execute("DELETE FROM professional_sessions WHERE phone=?", (profile["phone"],))
+                self.json_reply(200, {"message": "Acesso habilitado. Informe ao prestador a senha provisória e o endereço /profissional."})
+                return
             if urlsplit(self.path).query == "avaliacao=1":
                 self.moderate_review(data)
                 return
