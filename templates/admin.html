@@ -67,6 +67,11 @@ a{color:#176342}
 </div>
 <button>Salvar alterações</button>
 <button type="button" class="delete-provider">Excluir prestador</button>
+<details><summary>Habilitar ou recuperar acesso do profissional</summary>
+<p>Confirme a identidade do prestador antes de definir uma senha provisória.</p>
+<label>Senha provisória<input class="professional-password" type="password" minlength="15" maxlength="128" autocomplete="new-password"></label>
+<button type="button" class="enable-access">Definir senha de acesso</button>
+</details>
 <p class="message" role="status"></p>
 </form></details></article>
 </template>
@@ -109,6 +114,19 @@ function render() {
     showExtras();
     fields.premium.addEventListener('change', showExtras);
     const message = view.querySelector('.message');
+    const access = view.querySelector('.enable-access');
+    const temporary = view.querySelector('.professional-password');
+    access.addEventListener('click', async () => {
+      if(temporary.value.length<15){message.textContent='Use pelo menos 15 caracteres.';return;}
+      access.disabled=true;
+      try{
+        const response=await fetch(endpoint+'?acesso=1',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1'},
+          body:JSON.stringify({id:Number(profile.id),password:temporary.value})});
+        const data=await response.json();
+        message.textContent=data.message||data.error;
+        if(response.ok)temporary.value='';
+      }catch{message.textContent='Falha na conexão. Tente novamente.';}finally{access.disabled=false;}
+    });
     const remove = view.querySelector('.delete-provider');
     const save = form.querySelector('button[type="submit"], button:not([type])');
     remove.addEventListener('click', async () => {
