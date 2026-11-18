@@ -23,7 +23,7 @@ class handler(Handler):
             self.json_reply(400, {"error": "Informe seu nome, selecione as estrelas e confirme o atendimento."})
             return
         with closing(connect()) as db, db:
-            provider = db.execute("SELECT id, premium FROM providers WHERE id = ? AND status = 'active' FOR UPDATE",
+            provider = db.execute("SELECT id, premium, reviews FROM providers WHERE id = ? AND status = 'active' FOR UPDATE",
                                   (provider_id,)).fetchone()
             if not provider or not provider["premium"]:
                 self.json_reply(404, {"error": "Este perfil não está recebendo avaliações."})
@@ -34,6 +34,10 @@ class handler(Handler):
             if duplicate:
                 self.json_reply(409, {"error": "Uma avaliação com este nome já foi enviada hoje para este profissional."})
                 return
-            db.execute("INSERT INTO customer_reviews(provider_id,name,stars,comment) VALUES(?,?,?,?)",
-                       (provider_id, name, stars, comment))
-        self.json_reply(201, {"message": "Avaliação enviada! Ela será publicada após aprovação."})
+            db.execute("""INSERT INTO customer_reviews(provider_id,name,stars,comment,status)
+                VALUES(?,?,?,?,'approved')""", (provider_id, name, stars, comment))
+            entries = json.loads(provider["reviews"])
+            entries.append({"stars": stars, "text": comment, "name": name})
+            db.execute("UPDATE providers SET reviews = ? WHERE id = ?",
+                       (json.dumps(entries), provider_id))
+        self.json_reply(201, {"message": "Sua avaliação foi publicada. Obrigado!"})
