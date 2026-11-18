@@ -178,15 +178,16 @@ fieldset{border:1px solid #dce1e5;border-radius:5px;margin:16px 0}
 <div id="home-reviews" class="showcase-grid"></div>
 </section>
 <section class="form" id="cadastro">
-<div class="registration-copy"><h2>Cadastre seu serviço</h2><p><a href="/profissional">Crie seu perfil com telefone e senha</a> para gerenciar seus dados e suas fotos.</p>
+<div class="registration-copy"><h2>Cadastre seu serviço</h2><p>Crie seu perfil gratuito e use seu telefone e senha para atualizar os dados e gerenciar suas fotos.</p>
 <p>Seu anúncio mostra seu nome e o botão para abrir uma conversa. O perfil pago pode incluir foto, descrição e avaliações.</p>
 </div>
 <form id="register">
 <label>Serviço que você oferece<select required name="category"><option value="">Selecione</option></select></label>
 <label>Nome profissional<input name="name" required minlength="2" maxlength="80" autocomplete="name"></label>
 <label>WhatsApp com DDD<input name="phone" required type="tel" maxlength="25" autocomplete="tel" placeholder="(89) 99999-9999"></label>
+<label>Crie uma senha<input name="password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required><small>Use entre 15 e 128 caracteres.</small></label>
 <label><input name="consent" type="checkbox" required> Autorizo a publicação do meu nome e do contato profissional neste catálogo.</label>
-<button type="submit" disabled>Enviar cadastro gratuito</button>
+<button type="submit" disabled>Criar meu perfil gratuito</button>
 <p id="feedback" role="status"></p>
 </form>
 </section>
@@ -558,13 +559,17 @@ form.addEventListener('submit', async event => {
   byId('feedback').textContent = 'Enviando…';
   const data = Object.fromEntries(new FormData(form));
   data.consent = form.elements.consent.checked;
+  data.action = 'register';
   try {
-    const response = await fetch('/api/cadastro', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+    const response = await fetch('/api/profissional', {
+      method: 'POST', headers: {'Content-Type': 'application/json','X-Professional-Request':'1'}, body: JSON.stringify(data)
     });
     const result = await response.json();
     byId('feedback').textContent = result.message || result.error;
-    if (response.ok) form.reset();
+    if (response.ok) {
+      form.reset();
+      window.location.assign('/profissional');
+    }
   } catch {
     byId('feedback').textContent = 'Falha na conexão. Tente enviar novamente.';
   } finally {
