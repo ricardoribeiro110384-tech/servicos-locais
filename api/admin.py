@@ -12,8 +12,6 @@ from psycopg.errors import ForeignKeyViolation
 
 from app import Handler
 from api.catalogo import connect
-from security import (attempts_exceeded, clear_attempts, record_attempt,
-                      request_ip, throttle_key, valid_admin_password)
 
 
 class handler(Handler):
@@ -26,25 +24,14 @@ class handler(Handler):
     def authorize(self):
         password = os.environ.get("ADMIN_PASSWORD")
         if not password:
-            self.json_reply(503, {"error": "Configure ADMIN_PASSWORD na Vercel."})
+            self.json_reply(503, {"error": "Acesso administrativo ainda não configurado."})
             return False
         self.recovery_fingerprint = hashlib.sha256(password.encode()).hexdigest()
-        key = throttle_key("admin", request_ip(self))
         with closing(connect()) as db:
-            if attempts_exceeded(db, key, 8, 900):
-                self.json_reply(429, {"error": "Muitas tentativas de acesso. Tente novamente mais tarde."})
-                return False
             credential = db.execute(
                 "SELECT salt, password_hash FROM admin_credential WHERE id = 1 AND recovery_fingerprint = ?",
                 (self.recovery_fingerprint,),
             ).fetchone()
-        # Preserve an existing strong password changed in the admin panel even
-        # when the legacy recovery secret in Vercel is shorter than 15 chars.
-        # The recovery secret itself is only accepted as an initial password
-        # when it meets the new minimum length.
-        if credential is None and not valid_admin_password(password):
-            self.json_reply(503, {"error": "Configure ADMIN_PASSWORD com pelo menos 15 caracteres na Vercel."})
-            return False
         try:
             scheme, value = self.headers.get("Authorization", "").split(" ", 1)
             user, supplied = base64.b64decode(value, validate=True).decode().split(":", 1)
@@ -59,12 +46,8 @@ class handler(Handler):
             else:
                 valid = hmac.compare_digest(supplied.encode(), password.encode())
             if valid:
-                with closing(connect()) as db, db:
-                    clear_attempts(db, key)
                 self.current_password = supplied
                 return True
-        with closing(connect()) as db, db:
-            record_attempt(db, key, 900)
         self.send_response(401)
         self.send_header("WWW-Authenticate", 'Basic realm="Servicos Locais Admin", charset="UTF-8"')
         self.send_header("Content-Length", "0")
@@ -107,7 +90,11 @@ class handler(Handler):
             rows = list(db.execute("""SELECT id, name, phone, category, status,
                 premium, description, photo, reviews FROM providers
                 ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, id DESC"""))
-        self.json_reply(200, {"providers": rows})
+        with closing(connect()) as db:
+            pending = list(db.execute("""SELECT r.id, r.name, r.stars, r.comment, p.name AS provider_name
+                FROM customer_reviews r JOIN providers p ON p.id = r.provider_id
+                WHERE r.status = 'pending' ORDER BY r.created_at"""))
+        self.json_reply(200, {"providers": rows, "pending_reviews": pending})
 
     def delete_provider(self, provider_id):
         if type(provider_id) is not int or not 0 < provider_id < 2**63:
@@ -125,6 +112,27 @@ class handler(Handler):
             return
         self.json_reply(200, {"message": "Prestador excluído."})
 
+    def moderate_review(self, data):
+        review_id, action = data.get("id"), data.get("action")
+        if type(review_id) is not int or not 0 < review_id < 2**63 or action not in ("approve", "reject"):
+            self.json_reply(400, {"error": "Avaliação inválida."})
+            return
+        with closing(connect()) as db, db:
+            review = db.execute("SELECT * FROM customer_reviews WHERE id = ? FOR UPDATE", (review_id,)).fetchone()
+            if not review or review["status"] != "pending":
+                self.json_reply(409, {"error": "Esta avaliação já foi moderada ou removida. Recarregue a página."})
+                return
+            if action == "approve":
+                provider = db.execute("SELECT reviews FROM providers WHERE id = ? FOR UPDATE",
+                                      (review["provider_id"],)).fetchone()
+                entries = json.loads(provider["reviews"])
+                entries.append({"stars": review["stars"], "text": review["comment"], "name": review["name"]})
+                db.execute("UPDATE providers SET reviews = ? WHERE id = ?",
+                           (json.dumps(entries), review["provider_id"]))
+            db.execute("UPDATE customer_reviews SET status = ? WHERE id = ?",
+                       ("approved" if action == "approve" else "rejected", review_id))
+        self.json_reply(200, {"message": "Avaliação aprovada." if action == "approve" else "Avaliação rejeitada."})
+
     def do_POST(self):
         if not self.authorize():
             return
@@ -141,6 +149,9 @@ class handler(Handler):
                 raise ValueError
             if urlsplit(self.path).query == "senha=1":
                 self.change_password(data)
+                return
+            if urlsplit(self.path).query == "avaliacao=1":
+                self.moderate_review(data)
                 return
             provider_id = data["id"]
             if urlsplit(self.path).query == "excluir=1":
