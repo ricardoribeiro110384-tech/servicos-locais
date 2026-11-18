@@ -346,11 +346,6 @@ function render() {
       card.append(rating);
     }
     if (profile.description) card.append(element('p', profile.description));
-    for (const review of profile.reviews || []) {
-      const quote = element('blockquote');
-      quote.append(stars(review.stars), element('p', review.text));
-      card.append(quote);
-    }
     const link = element('a', 'Chamar no WhatsApp');
     link.className = 'contact';
     link.target = '_blank';
