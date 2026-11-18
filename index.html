@@ -565,7 +565,16 @@ byId('review-form').addEventListener('submit', async event => {
       })});
     const result = await response.json();
     byId('review-feedback').textContent = result.message || result.error;
-    if (!response.ok) button.disabled = false;
+    if (!response.ok) {
+      button.disabled = false;
+    } else {
+      const refresh = await fetch('/api/catalogo');
+      if (refresh.ok) {
+        providers = (await refresh.json()).providers;
+        render();
+        renderShowcases();
+      }
+    }
   } catch {
     byId('review-feedback').textContent = 'Falha na conexão. Tente novamente.';
     button.disabled = false;
