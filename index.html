@@ -100,15 +100,47 @@ footer{padding:20px 0 28px;display:flex;justify-content:space-between;border-top
 dialog{padding:22px;border-radius:8px}
 @media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.showcase-grid{grid-template-columns:1fr 1fr}section.form{gap:25px}}
 @media(max-width:600px){main,nav{width:calc(100% - 28px)}nav{padding:14px 0}.brand{font-size:21px}nav a{font-size:13px;padding:7px 10px}.hero{padding:25px 0 20px}.hero-copy>p:last-child{font-size:16px}.search-panel{padding:17px}.filters{grid-template-columns:1fr;gap:12px}.grid,.showcase-grid{grid-template-columns:1fr;gap:16px}section.form{grid-template-columns:1fr;padding:21px;gap:12px}.form h2{font-size:25px}footer{flex-direction:column;gap:4px}.home-showcase{margin:32px 0}}
+
+.hero{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(270px,.8fr);gap:54px;align-items:center;padding:45px 0 38px}
+.hero h1{font-size:clamp(30px,3.3vw,44px);line-height:1.16;letter-spacing:-1.1px;max-width:720px;margin:12px 0 18px}
+.hero-copy>p{font-size:17px;line-height:1.65;color:var(--muted);max-width:680px}
+.hero-copy .place{font-size:14px;color:var(--blue);font-weight:600;margin-bottom:10px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 14px;align-items:center}
+.hero-actions a{padding:11px 17px;font-size:15px;font-weight:600;border-radius:5px;text-decoration:none}
+.find-service{background:var(--blue);color:white;border:1px solid var(--blue)}
+.offer-service{border:1px solid #b9c4cd;color:var(--blue);background:white}
+.hero-copy .hero-note{font-size:13px;line-height:1.5;max-width:570px;margin:0}
+.how-it-works{background:#fff;border-left:3px solid var(--blue);padding:23px 25px}
+.how-it-works h2{font-size:20px;margin-bottom:17px}
+.how-it-works ol{list-style:none;counter-reset:step;margin:0;padding:0}
+.how-it-works li{counter-increment:step;position:relative;padding-left:34px;margin-bottom:18px}
+.how-it-works li:last-child{margin-bottom:0}
+.how-it-works li::before{content:counter(step);position:absolute;left:0;top:0;color:var(--blue);font-size:18px;font-weight:700}
+.how-it-works strong{display:block;font-size:16px;margin-bottom:3px}
+.how-it-works span{display:block;color:var(--muted);font-size:14px;line-height:1.5}
+@media(max-width:800px){.hero{grid-template-columns:1fr;gap:25px;padding:28px 0}.hero h1{font-size:34px}.hero-copy>p{font-size:16px}.how-it-works{padding:20px}.hero-actions a{text-align:center}.hero-copy .hero-note{font-size:13px}}
 </style>
 <header><nav><strong class="brand"><span class="brand-mark" aria-hidden="true">SL</span>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
 <main>
 <section class="hero">
 <div class="hero-copy">
-<p class="place">São Raimundo Nonato · PI</p>
-<h1>Encontre profissionais em São Raimundo Nonato</h1>
-<p>Encontre serviços na sua cidade, conheça os trabalhos e converse direto pelo WhatsApp.</p>
+<p class="place">São Raimundo Nonato, Piauí</p>
+<h1>Precisou de um serviço?<br>Encontre quem faz aqui na cidade.</h1>
+<p>O Serviços Locais reúne prestadores de São Raimundo Nonato em um só lugar. Compare perfis, veja fotos dos trabalhos e avaliações e fale com o profissional pelo WhatsApp para pedir seu orçamento.</p>
+<div class="hero-actions">
+<a class="find-service" href="#titulo">Buscar um profissional</a>
+<a class="offer-service" href="#cadastro">Quero divulgar meu serviço</a>
 </div>
+<p class="hero-note">Consulta gratuita, sem criar conta. O orçamento é combinado diretamente com o profissional.</p>
+</div>
+<aside class="how-it-works" aria-labelledby="how-title">
+<h2 id="how-title">Como funciona</h2>
+<ol>
+<li><strong>Encontre o serviço</strong><span>Pesquise por eletricista, encanador, diarista e outros serviços da cidade.</span></li>
+<li><strong>Conheça o profissional</strong><span>Consulte o perfil e, quando disponíveis, as fotos e avaliações.</span></li>
+<li><strong>Combine pelo WhatsApp</strong><span>Converse sobre o que precisa, peça o orçamento e acerte o atendimento.</span></li>
+</ol>
+</aside>
 </section>
 <section class="directory" aria-labelledby="titulo">
 <div class="search-panel">
