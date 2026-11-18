@@ -1,5 +1,7 @@
-from api.catalogo import handler as CatalogHandler
+from api.profissional import handler as ProfessionalHandler
 
 
-class handler(CatalogHandler):
-    pass
+class handler(ProfessionalHandler):
+    # Preserve the former endpoint as an alias for the single account flow.
+    def do_POST(self):
+        super().do_POST()
