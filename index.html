@@ -54,11 +54,6 @@ blockquote{margin:12px 0;border-left:3px solid #bbccbf;padding-left:10px}
 <p id="results" role="status">Carregando profissionais…</p>
 <div id="cards" class="grid"></div>
 </section>
-<section class="home-showcase" aria-labelledby="gallery-title">
-<h2 id="gallery-title">Galeria de trabalhos</h2>
-<p id="gallery-empty" hidden>Nenhuma foto de trabalho publicada ainda.</p>
-<div id="gallery" class="showcase-grid"></div>
-</section>
 <section class="home-showcase" aria-labelledby="reviews-title">
 <h2 id="reviews-title">Avaliações de clientes</h2>
 <p id="reviews-empty" hidden>Nenhuma avaliação publicada ainda.</p>
@@ -284,21 +279,10 @@ function stars(value) {
 }
 function renderShowcases() {
   const paid = providers.filter(profile => profile.premium);
-  const gallery = paid.filter(profile => profile.photo);
   const reviews = paid.flatMap(profile =>
     (profile.reviews || []).map(review => ({profile, review})));
-  byId('gallery-empty').hidden = gallery.length > 0;
   byId('reviews-empty').hidden = reviews.length > 0;
 
-  byId('gallery').replaceChildren(...gallery.map(profile => {
-    const card = element('article');
-    const photo = element('img');
-    photo.src = profile.photo;
-    photo.alt = 'Trabalho de ' + profile.name;
-    photo.loading = 'lazy';
-    card.append(photo, element('h3', profile.name), element('small', profile.category));
-    return card;
-  }));
   byId('home-reviews').replaceChildren(...reviews.map(({profile, review}) => {
     const card = element('article');
     card.append(element('h3', profile.name), element('small', profile.category),
@@ -334,7 +318,7 @@ function render() {
     if (profile.photo) {
       const photo = element('img');
       photo.src = profile.photo;
-      photo.alt = 'Foto do perfil de ' + profile.name;
+      photo.alt = 'Trabalho de ' + profile.name;
       photo.loading = 'lazy';
       card.append(photo);
     }
