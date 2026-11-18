@@ -21,6 +21,7 @@ input:not([type=checkbox]),select,textarea{width:100%;display:block}
 button{background:#176342;color:white;cursor:pointer}
 button.delete-provider{background:#a12626}
 a{color:#176342}
+.metrics-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;background:#fff}th,td{text-align:left;padding:12px;border-bottom:1px solid #d7e2da;white-space:nowrap}th{font-size:14px}#metrics-status{color:#53685e}
 </style>
 <header><nav><strong>Serviços Locais</strong><a href="/">Abrir catálogo</a></nav></header>
 <main>
@@ -35,6 +36,14 @@ a{color:#176342}
 <p id="password-feedback" role="status"></p>
 </form>
 </details>
+<section aria-labelledby="metrics-title">
+<h2 id="metrics-title">Cliques por profissional</h2>
+<label>Período<select id="metrics-days"><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></label>
+<button type="button" id="refresh-metrics">Atualizar relatório</button>
+<p id="metrics-status" role="status"></p>
+<p>Únicos representam navegadores neste período. Cliques no WhatsApp indicam interesse em contato. A medição começou com esta atualização.</p>
+<div class="metrics-scroll"><table><thead><tr><th scope="col">Profissional</th><th scope="col">Ver fotos</th><th scope="col">Únicos em fotos</th><th scope="col">WhatsApp</th><th scope="col">Únicos no WhatsApp</th></tr></thead><tbody id="metrics-body"></tbody></table></div>
+</section>
 <section><h2>Avaliações pendentes</h2><div id="pending-reviews"></div></section>
 <div class="filters">
 <label>Buscar por nome, telefone ou serviço<input id="search" type="search"></label>
@@ -206,6 +215,32 @@ function renderPending(reviews) {
     target.append(card);
   }
 }
+let metricsRequest = 0;
+async function loadMetrics() {
+  const request = ++metricsRequest;
+  byId('metrics-status').textContent = 'Carregando relatório…';
+  try {
+    const response = await fetch(endpoint + '?metricas=1&dias=' + byId('metrics-days').value, {cache:'no-store'});
+    if (!response.ok) throw new Error();
+    const data = await response.json();
+    if (request !== metricsRequest) return;
+    byId('metrics-body').replaceChildren(...data.rows.map(row => {
+      const tr = document.createElement('tr');
+      for (const value of [row.name,row.photos,row.photos_unique,row.whatsapp,row.whatsapp_unique]) {
+        const td = document.createElement('td');
+        td.textContent = value;
+        tr.append(td);
+      }
+      return tr;
+    }));
+    byId('metrics-status').textContent = data.rows.length ? '' : 'Nenhum profissional cadastrado.';
+  } catch {
+    if (request === metricsRequest) byId('metrics-status').textContent = 'Não foi possível carregar o relatório. Tente atualizar.';
+  }
+}
+byId('metrics-days').addEventListener('change', loadMetrics);
+byId('refresh-metrics').addEventListener('click', loadMetrics);
+loadMetrics();
 async function load() {
   try {
     const response = await fetch(endpoint + '?dados=1', {cache:'no-store'});
