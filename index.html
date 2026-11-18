@@ -133,8 +133,9 @@ dialog{padding:22px;border-radius:8px}
 fieldset{border:1px solid #dce1e5;border-radius:5px;margin:16px 0}
 #review-dialog{max-width:580px}#review-dialog textarea{display:block;width:100%;font:inherit;padding:10px;border:1px solid #bfc8cf;border-radius:4px}
 .rate-professional{margin:12px 0 0;padding:7px 0;background:none;border:0;color:#214b70;font-size:14px}
+.nav-actions{display:flex;flex-wrap:wrap;gap:8px}.gallery-controls{display:flex;justify-content:space-between;align-items:center;gap:10px}@media(max-width:600px){.nav-actions a{font-size:11px;padding:7px}nav{align-items:flex-start}}
 </style>
-<header><nav><strong class="brand"><span class="brand-mark" aria-hidden="true">SL</span>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
+<header><nav><strong class="brand"><span class="brand-mark" aria-hidden="true">SL</span>Serviços Locais</strong><div class="nav-actions"><a href="/profissional">Área do profissional</a> <a href="#cadastro">Cadastrar meu serviço</a></div></nav></header>
 <main>
 <section class="hero">
 <div class="hero-copy">
@@ -177,7 +178,7 @@ fieldset{border:1px solid #dce1e5;border-radius:5px;margin:16px 0}
 <div id="home-reviews" class="showcase-grid"></div>
 </section>
 <section class="form" id="cadastro">
-<div class="registration-copy"><h2>Cadastre seu serviço</h2>
+<div class="registration-copy"><h2>Cadastre seu serviço</h2><p><a href="/profissional">Crie seu perfil com telefone e senha</a> para gerenciar seus dados e suas fotos.</p>
 <p>Seu anúncio mostra seu nome e o botão para abrir uma conversa. O perfil pago pode incluir foto, descrição e avaliações.</p>
 </div>
 <form id="register">
@@ -210,7 +211,7 @@ fieldset{border:1px solid #dce1e5;border-radius:5px;margin:16px 0}
 </dialog>
 <dialog id="photo-dialog" aria-labelledby="photo-title">
 <div class="dialog-header"><h2 id="photo-title">Fotos do trabalho</h2><button id="close-photos" type="button">Fechar</button></div>
-<img id="photo-preview" alt="">
+<img id="photo-preview" alt=""><div class="gallery-controls"><button id="photo-prev" type="button">Anterior</button><span id="photo-count"></span><button id="photo-next" type="button">Próxima</button></div>
 </dialog>
 <script type="application/json" id="service-groups">{
   "Casa, obras e manutenção": [
@@ -419,6 +420,14 @@ function trackClick(profile, action) {
   fetch('/api/clique', {method:'POST',headers:{'Content-Type':'application/json'},
     body,keepalive:true}).catch(() => {});
 }
+let galleryPhotos = [];
+let galleryIndex = 0;
+function showGalleryPhoto() {
+  byId('photo-preview').src = galleryPhotos[galleryIndex];
+  byId('photo-count').textContent = (galleryIndex+1)+' de '+galleryPhotos.length;
+  byId('photo-prev').disabled = galleryIndex===0;
+  byId('photo-next').disabled = galleryIndex===galleryPhotos.length-1;
+}
 function stars(value) {
   const rating = Math.max(0, Math.min(5, Number(value) || 0));
   const container = element('span');
@@ -486,7 +495,9 @@ function render() {
       viewPhotos.addEventListener('click', () => {
         trackClick(profile, 'photos');
         byId('photo-title').textContent = 'Fotos de ' + profile.name;
-        byId('photo-preview').src = profile.photo;
+        galleryPhotos = profile.photos?.length ? profile.photos : [profile.photo];
+        galleryIndex = 0;
+        showGalleryPhoto();
         byId('photo-preview').alt = 'Trabalho de ' + profile.name;
         byId('photo-dialog').showModal();
       });
@@ -600,6 +611,8 @@ byId('review-form').addEventListener('submit', async event => {
     button.disabled = false;
   }
 });
+byId('photo-prev').addEventListener('click', () => {if(galleryIndex>0){galleryIndex--;showGalleryPhoto();}});
+byId('photo-next').addEventListener('click', () => {if(galleryIndex<galleryPhotos.length-1){galleryIndex++;showGalleryPhoto();}});
 byId('close-photos').addEventListener('click', () => byId('photo-dialog').close());
 byId('photo-dialog').addEventListener('click', event => {
   if (event.target === event.currentTarget) {
