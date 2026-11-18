@@ -401,6 +401,24 @@ function element(tag, value) {
   if (value !== undefined) node.textContent = value;
   return node;
 }
+let clickVisitor;
+function trackClick(profile, action) {
+  try {
+    if (!clickVisitor) {
+      clickVisitor = localStorage.getItem('servicos-visitor');
+      if (!clickVisitor || !/^[0-9a-f-]{36}$/i.test(clickVisitor)) {
+        clickVisitor = crypto.randomUUID();
+        localStorage.setItem('servicos-visitor', clickVisitor);
+      }
+    }
+  } catch {
+    clickVisitor = clickVisitor || crypto.randomUUID();
+  }
+  const body = JSON.stringify({id:Number(profile.id),action,
+    visitor:clickVisitor,event:crypto.randomUUID()});
+  fetch('/api/clique', {method:'POST',headers:{'Content-Type':'application/json'},
+    body,keepalive:true}).catch(() => {});
+}
 function stars(value) {
   const rating = Math.max(0, Math.min(5, Number(value) || 0));
   const container = element('span');
@@ -466,6 +484,7 @@ function render() {
       viewPhotos.className = 'view-photos';
       viewPhotos.setAttribute('aria-label', 'Ver fotos de ' + profile.name);
       viewPhotos.addEventListener('click', () => {
+        trackClick(profile, 'photos');
         byId('photo-title').textContent = 'Fotos de ' + profile.name;
         byId('photo-preview').src = profile.photo;
         byId('photo-preview').alt = 'Trabalho de ' + profile.name;
@@ -487,6 +506,7 @@ function render() {
     link.rel = 'noopener noreferrer';
     link.href = 'https://wa.me/55' + profile.phone + '?text='
       + encodeURIComponent('Olá! Encontrei seu contato no Serviços Locais. Gostaria de pedir um orçamento.');
+    link.addEventListener('click', () => trackClick(profile, 'whatsapp'));
     card.append(link);
     if (profile.premium) {
       const rate = element('button', 'Avaliar profissional');
