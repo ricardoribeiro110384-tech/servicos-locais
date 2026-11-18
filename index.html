@@ -129,6 +129,10 @@ dialog{padding:22px;border-radius:8px}
 .offer-service{background:transparent;color:white;border-color:#b5c5cf}
 .how-it-works{background:rgba(255,255,255,.95);border-left:3px solid #9db6c8;border-radius:4px}
 @media(max-width:800px){.hero{padding:26px 22px;margin-top:20px}.hero::before{background-position:65% center}.hero::after{background:rgba(17,35,49,.86)}}
+.review-stars{display:flex;gap:10px;flex-wrap:wrap}.review-stars label{color:#a96b00;cursor:pointer}
+fieldset{border:1px solid #dce1e5;border-radius:5px;margin:16px 0}
+#review-dialog{max-width:580px}#review-dialog textarea{display:block;width:100%;font:inherit;padding:10px;border:1px solid #bfc8cf;border-radius:4px}
+.rate-professional{margin:12px 0 0;padding:7px 0;background:none;border:0;color:#214b70;font-size:14px}
 </style>
 <header><nav><strong class="brand"><span class="brand-mark" aria-hidden="true">SL</span>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
 <main>
@@ -187,6 +191,23 @@ dialog{padding:22px;border-radius:8px}
 </section>
 <footer><span>Serviços Locais</span><span>São Raimundo Nonato · Piauí</span></footer>
 </main>
+<dialog id="review-dialog" aria-labelledby="review-title">
+<div class="dialog-header"><h2 id="review-title">Avaliar profissional</h2><button type="button" id="close-review">Fechar</button></div>
+<form id="review-form">
+<label>Seu nome<input name="name" autocomplete="name" minlength="2" maxlength="80" required></label>
+<fieldset><legend>Sua avaliação</legend><div class="review-stars">
+<label><input type="radio" name="stars" value="1" required><span aria-label="1 estrela">★</span></label>
+<label><input type="radio" name="stars" value="2"><span aria-label="2 estrelas">★★</span></label>
+<label><input type="radio" name="stars" value="3"><span aria-label="3 estrelas">★★★</span></label>
+<label><input type="radio" name="stars" value="4"><span aria-label="4 estrelas">★★★★</span></label>
+<label><input type="radio" name="stars" value="5"><span aria-label="5 estrelas">★★★★★</span></label>
+</div></fieldset>
+<label>Comentário (opcional)<textarea name="comment" maxlength="500" rows="3"></textarea></label>
+<label><input name="confirmed" type="checkbox" required> Fui atendido por este profissional e autorizo a publicação do meu nome e da avaliação.</label>
+<button type="submit">Enviar avaliação</button>
+<p id="review-feedback" role="status"></p>
+</form>
+</dialog>
 <dialog id="photo-dialog" aria-labelledby="photo-title">
 <div class="dialog-header"><h2 id="photo-title">Fotos do trabalho</h2><button id="close-photos" type="button">Fechar</button></div>
 <img id="photo-preview" alt="">
@@ -467,6 +488,20 @@ function render() {
     link.href = 'https://wa.me/55' + profile.phone + '?text='
       + encodeURIComponent('Olá! Encontrei seu contato no Serviços Locais. Gostaria de pedir um orçamento.');
     card.append(link);
+    if (profile.premium) {
+      const rate = element('button', 'Avaliar profissional');
+      rate.type = 'button';
+      rate.className = 'rate-professional';
+      rate.addEventListener('click', () => {
+        byId('review-form').reset();
+        byId('review-form').dataset.providerId = profile.id;
+        byId('review-feedback').textContent = '';
+        byId('review-form').querySelector('button[type=submit]').disabled = false;
+        byId('review-title').textContent = 'Avaliar ' + profile.name;
+        byId('review-dialog').showModal();
+      });
+      card.append(rate);
+    }
     return card;
   }));
 }
@@ -514,6 +549,28 @@ byId('group').addEventListener('change', () => {
 });
 byId('search').addEventListener('input', render);
 for (const id of ['service', 'order', 'rated']) byId(id).addEventListener('change', render);
+byId('close-review').addEventListener('click', () => byId('review-dialog').close());
+byId('review-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type=submit]');
+  const fields = form.elements;
+  button.disabled = true;
+  byId('review-feedback').textContent = 'Enviando…';
+  try {
+    const response = await fetch('/api/avaliacao', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+        id:Number(form.dataset.providerId), name:fields.name.value,
+        stars:Number(fields.stars.value),comment:fields.comment.value,confirmed:fields.confirmed.checked
+      })});
+    const result = await response.json();
+    byId('review-feedback').textContent = result.message || result.error;
+    if (!response.ok) button.disabled = false;
+  } catch {
+    byId('review-feedback').textContent = 'Falha na conexão. Tente novamente.';
+    button.disabled = false;
+  }
+});
 byId('close-photos').addEventListener('click', () => byId('photo-dialog').close());
 byId('photo-dialog').addEventListener('click', event => {
   if (event.target === event.currentTarget) {
