@@ -64,41 +64,19 @@ Se esquecer a senha, defina um valor novo e exclusivo em `ADMIN_PASSWORD`
 na Vercel e faça uma nova publicação de produção. Use esse valor para entrar
 e, depois, escolha uma senha pelo painel.
 
+## Área do profissional
 
-## Segurança e testes (fase 1)
+Acesse `/profissional`. Novos prestadores podem criar um cadastro com telefone
+e senha de 15 a 128 caracteres. O perfil aguarda a aprovação do administrador.
 
-Antes de publicar uma versão que inclua `security.py`, execute
-`migrations/002_security_throttle.sql` no editor SQL do banco Neon correspondente.
-**Atenção:** sem esta migração, o cadastro e o painel administrativo podem
-retornar erro 500. Faça a migração primeiro e depois publique a aplicação.
+Para cadastros anteriores ou recuperação de acesso, o administrador confirma
+a identidade do prestador e define uma senha provisória no cadastro, em
+**Habilitar ou recuperar acesso do profissional**. O prestador pode trocar
+essa senha em sua área. A redefinição encerra as sessões anteriores.
 
-Na Vercel, mantenha `ADMIN_PASSWORD` como segredo forte de **pelo menos
-15 caracteres** (até 512 bytes em UTF-8) para recuperação segura. Se o
-administrador já redefiniu sua senha pelo painel, essa senha forte continuará
-válida mesmo quando o segredo de recuperação anterior tiver menos de 15 caracteres.
-Sem senha redefinida armazenada, o segredo inicial de menos de 15 caracteres
-não permite acesso e deverá ser substituído na Vercel. **Alterar
-`ADMIN_PASSWORD` redefine a senha administrativa**, conforme o procedimento acima;
-não faça isso sem necessidade.
+O plano pago permite até 10 fotos enviadas pelo dispositivo. As imagens são
+reduzidas e armazenadas no PostgreSQL. Perfis públicos pagos exibem a galeria
+em **Ver fotos**. A foto anterior cadastrada por URL também continua na galeria.
+Uma imagem oculta ou de perfil gratuito não é servida publicamente.
 
-Opcionalmente, configure `THROTTLE_SECRET` com um segredo aleatório longo
-para separar a chave usada pelo limitador de acessos da senha administrativa.
-Não registre essas variáveis no GitHub.
-
-O sistema limita **8 tentativas incorretas de acesso administrativo a cada
-15 minutos por endereço IP** e **12 solicitações válidas de cadastro por hora
-por IP**. O limitador usa o PostgreSQL na Vercel e o SQLite local, não memória
-volátil. Em produção, o IP é obtido do cabeçalho atribuído pela Vercel.
-A limitação por IP é uma camada inicial, não substitui WAF, monitoramento ou
-um serviço de autenticação especializado.
-
-Para executar os testes localmente:
-
-```bash
-python -m pip install -r requirements.txt
-python -m unittest discover -s tests -v
-```
-
-O workflow `.github/workflows/tests.yml` executa esses testes em pushes
-e pull requests. As mudanças de segurança devem ser validadas em uma branch
-antes de integrar à versão em produção.
+Aplique `migrations/004_professional_area.sql` antes de publicar esta versão.
