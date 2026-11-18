@@ -119,6 +119,16 @@ dialog{padding:22px;border-radius:8px}
 .how-it-works strong{display:block;font-size:16px;margin-bottom:3px}
 .how-it-works span{display:block;color:var(--muted);font-size:14px;line-height:1.5}
 @media(max-width:800px){.hero{grid-template-columns:1fr;gap:25px;padding:28px 0}.hero h1{font-size:34px}.hero-copy>p{font-size:16px}.how-it-works{padding:20px}.hero-actions a{text-align:center}.hero-copy .hero-note{font-size:13px}}
+
+.hero{position:relative;isolation:isolate;margin:26px 0 30px;padding:38px;border-radius:9px;overflow:hidden;background:#20394b}
+.hero::before{content:'';position:absolute;inset:0;z-index:-2;background-image:url('https://raw.githubusercontent.com/ricardoribeiro110384-tech/servicos-locais/f99d887597f83e76eec5bdd2ce962bb3e3ae059a/demo/eletricista.jpg');background-size:cover;background-position:center 42%}
+.hero::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(17,35,49,.95),rgba(17,35,49,.84) 55%,rgba(17,35,49,.65))}
+.hero h1{color:#fff}
+.hero-copy>p,.hero-copy .place,.hero-copy .hero-note{color:#e3eaf0}
+.find-service{background:white;color:#214b70;border-color:white}
+.offer-service{background:transparent;color:white;border-color:#b5c5cf}
+.how-it-works{background:rgba(255,255,255,.95);border-left:3px solid #9db6c8;border-radius:4px}
+@media(max-width:800px){.hero{padding:26px 22px;margin-top:20px}.hero::before{background-position:65% center}.hero::after{background:rgba(17,35,49,.86)}}
 </style>
 <header><nav><strong class="brand"><span class="brand-mark" aria-hidden="true">SL</span>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
 <main>
