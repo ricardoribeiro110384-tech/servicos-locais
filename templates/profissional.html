@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Área do profissional | Serviços Locais</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f7;color:#273544;font:16px/1.5 system-ui,sans-serif}
+header{background:white;border-bottom:3px solid #214b70;padding:18px}nav,main{max-width:900px;margin:auto}
+nav{display:flex;justify-content:space-between}a{color:#214b70}main{padding:24px 18px}
+section,article{background:white;border:1px solid #dce1e5;border-radius:7px;padding:22px;margin-bottom:20px}
+label{display:block;margin:12px 0}input:not([type=checkbox]),select,textarea{display:block;width:100%;font:inherit;padding:10px;border:1px solid #bfc8cf;border-radius:4px}
+button{font:inherit;padding:10px 16px;background:#214b70;color:white;border:0;border-radius:4px;cursor:pointer}
+button:disabled{opacity:.5}h1{font-size:29px}h2{font-size:21px}.photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}.photos img{width:100%;aspect-ratio:4/3;object-fit:cover}small{color:#63707b}
+[hidden]{display:none!important}fieldset{border:1px solid #dce1e5}#status{white-space:pre-wrap}
+</style>
+<header><nav><strong>Serviços Locais</strong><a href="/">Ver catálogo</a></nav></header>
+<main><h1>Área do profissional</h1><p id="status" role="status"></p>
+<section id="access"><h2>Entre para gerenciar seu perfil</h2>
+<form id="login"><label>Telefone com DDD<input name="phone" type="tel" autocomplete="tel" required></label>
+<label>Senha<input name="password" type="password" autocomplete="current-password" minlength="15" maxlength="128" required></label><button>Entrar</button></form>
+<p>Já tem um perfil, mas ainda não tem senha? Solicite ao administrador a habilitação do acesso. Para recuperar o acesso, solicite uma senha provisória ao administrador.</p>
+<details><summary>Criar meu cadastro gratuito</summary>
+<form id="signup"><label>Nome profissional<input name="name" minlength="2" maxlength="80" required></label>
+<label>Serviço<select name="category" id="categories" required></select></label>
+<label>Telefone com DDD<input name="phone" type="tel" autocomplete="tel" required></label>
+<label>Crie uma senha<input name="password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label>
+<label><input name="consent" type="checkbox" required> Autorizo a publicação do meu nome e contato profissional.</label><button>Cadastrar e entrar</button></form>
+</details></section>
+<div id="dashboard" hidden><button id="logout">Sair</button>
+<details><summary>Alterar minha senha</summary><form id="change-password">
+<label>Senha atual<input name="current" type="password" autocomplete="current-password" maxlength="128" required></label>
+<label>Nova senha<input name="password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label><button>Salvar nova senha</button></form></details><div id="profiles"></div></div>
+</main>
+<script>
+const el=id=>document.getElementById(id);
+function node(tag,text){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;}
+async function api(data){
+ const r=await fetch('/api/profissional',{method:'POST',headers:{'Content-Type':'application/json','X-Professional-Request':'1'},body:JSON.stringify(data)});
+ if(!r.ok){const d=await r.json();throw new Error(d.error||'Não foi possível concluir.');}
+ return r.status===200&&data.action==='logout'?{}:r.json();
+}
+let categories=[];
+async function load(){
+ const r=await fetch('/api/profissional?dados=1',{cache:'no-store'});
+ if(r.status===401){el('access').hidden=false;el('dashboard').hidden=true;return;}
+ if(!r.ok)throw new Error('Não foi possível carregar seu perfil.');
+ const d=await r.json();categories=d.categories;el('access').hidden=true;el('dashboard').hidden=false;
+ el('profiles').replaceChildren(...d.providers.map(profile=>{
+  const card=node('article');card.append(node('h2',profile.name),node('p',({pending:'Cadastro aguardando aprovação',active:'Publicado',hidden:'Perfil oculto'})[profile.status]+' · '+(profile.premium?'Plano pago':'Plano gratuito')));
+  const form=node('form');
+  const fields={};
+  for(const [key,labelText] of [['name','Nome profissional'],['category','Serviço'],['description','Descrição']]){
+   const label=node('label',labelText);
+   const field=node(key==='category'?'select':key==='description'?'textarea':'input');
+   if(key==='category')for(const c of categories)field.add(new Option(c,c));
+   field.value=profile[key];field.required=key!=='description';field.maxLength=key==='description'?1000:80;
+   if(key==='description')field.disabled=!profile.premium;
+   fields[key]=field;label.append(field);form.append(label);
+  }
+  const save=node('button','Salvar perfil');form.append(save);
+  form.addEventListener('submit',async e=>{e.preventDefault();save.disabled=true;try{await api({action:'save',id:Number(profile.id),name:fields.name.value,category:fields.category.value,description:fields.description.value});el('status').textContent='Perfil atualizado.';}catch(e){el('status').textContent=e.message;}finally{save.disabled=false;}});
+  card.append(form,node('h2','Fotos dos trabalhos'),node('p',profile.premium?'Adicione até 10 fotos. Elas aparecem junto ao seu contato e em Ver fotos.':'Solicite ao administrador a ativação do plano pago para enviar fotos.'));
+  const photos=node('div');photos.className='photos';
+  for(const photo of profile.photos){
+   const item=node('div');const image=node('img');image.src=photo.url;image.alt='Foto de trabalho';item.append(image);
+   const remove=node('button','Excluir foto');remove.type='button';remove.addEventListener('click',async()=>{if(!confirm('Excluir esta foto?'))return;remove.disabled=true;try{await api({action:'delete-photo',id:Number(profile.id),photo:Number(photo.id)});await load();}catch(e){el('status').textContent=e.message;remove.disabled=false;}});item.append(remove);photos.append(item);
+  }
+  card.append(photos);
+  if(profile.premium){
+   const label=node('label','Adicionar fotos do celular ou computador');
+   const upload=node('input');upload.type='file';upload.accept='image/jpeg,image/png,image/webp';upload.multiple=true;label.append(upload);card.append(label);
+   upload.addEventListener('change',async()=>{
+    upload.disabled=true;
+    try{
+     const files=[...upload.files];if(files.length+profile.photos.length>10)throw new Error('Escolha no máximo '+(10-profile.photos.length)+' fotos.');
+     for(let i=0;i<files.length;i++){
+      el('status').textContent='Enviando foto '+(i+1)+' de '+files.length+'…';
+      const file=files[i];if(file.size>15000000)throw new Error('Escolha fotos de até 15 MB.');
+      const image=await createImageBitmap(file);
+      const scale=Math.min(1,1200/Math.max(image.width,image.height));const canvas=document.createElement('canvas');
+      canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);
+      canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);image.close();
+      const imageData=canvas.toDataURL('image/jpeg',.8).split(',')[1];
+      await api({action:'upload',id:Number(profile.id),image:imageData});
+     }
+     el('status').textContent='Fotos enviadas.';await load();
+    }catch(e){el('status').textContent=e.message;await load();}finally{upload.disabled=false;}
+   });
+  }
+  return card;
+ }));
+}
+for(const [id,action] of [['login','login'],['signup','register']]){
+ el(id).addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const button=form.querySelector('button');button.disabled=true;try{const data=Object.fromEntries(new FormData(form));data.consent=form.elements.consent?.checked===true;await api({...data,action});form.reset();el('status').textContent=action==='register'?'Cadastro recebido. Seu perfil será publicado após aprovação.':'';await load();}catch(e){el('status').textContent=e.message;}finally{button.disabled=false;}});
+}
+el('change-password').addEventListener('submit',async e=>{
+ e.preventDefault();const form=e.currentTarget;const button=form.querySelector('button');button.disabled=true;
+ try{const result=await api({action:'password',...Object.fromEntries(new FormData(form))});form.reset();el('status').textContent=result.message;await load();}
+ catch(e){el('status').textContent=e.message;}finally{button.disabled=false;}
+});
+el('logout').addEventListener('click',async()=>{try{await api({action:'logout'});await load();}catch(e){el('status').textContent=e.message;}});
+async function start(){
+ try{const r=await fetch('/api/catalogo');if(!r.ok)throw Error();const d=await r.json();for(const category of d.categories)el('categories').add(new Option(category,category));await load();}
+ catch{el('status').textContent='Não foi possível carregar. Recarregue a página para tentar novamente.';}
+}
+start();
+</script></html>
