@@ -3,6 +3,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Serviços Locais | São Raimundo Nonato</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f7f8f3;color:#172c25;font:16px/1.55 system-ui,sans-serif}
@@ -39,15 +42,83 @@ dialog img{display:block;max-width:100%;max-height:72vh;object-fit:contain;margi
 .dialog-header{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .dialog-header h2{font-size:1.2rem;margin:0}
 .view-photos{display:block;margin:10px 0}
+
+:root{--ink:#19392e;--muted:#65786e;--green:#176745;--lime:#d9eea6;--line:#dfe6dc}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:#f6f7f2;color:var(--ink);font-family:'DM Sans',sans-serif}
+main,nav{width:min(1180px,calc(100% - 48px))}
+header{background:#fff;border-bottom:1px solid var(--line)}
+nav{padding:20px 0}
+.brand{font-family:Manrope,sans-serif;font-size:23px;letter-spacing:-1px;display:flex;align-items:center;gap:11px}
+.brand-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--green);color:var(--lime);font-size:23px;letter-spacing:-4px;padding-right:4px}
+nav a{background:var(--ink);color:#fff;border-radius:100px;padding:11px 20px;font-size:14px;font-weight:700;text-decoration:none}
+h1,h2,h3{font-family:Manrope,sans-serif}
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center;padding:54px 0 64px}
+h1{font-size:clamp(40px,4.8vw,65px);line-height:1.09;letter-spacing:-3px;max-width:650px;margin:18px 0 22px;font-weight:800}
+h1 span{color:var(--green)}
+.hero-copy>p:last-child{color:var(--muted);max-width:450px;font-size:18px;line-height:1.7}
+.place{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--green);background:#e8efdf;padding:7px 12px;border-radius:100px}
+.place::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green)}
+.hero-photos{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px;background:#e5ecd9;border-radius:32px;transform:rotate(1.2deg)}
+.hero-photos img{width:100%;height:240px;object-fit:cover;border-radius:20px}
+.hero-photos img:last-child{margin-top:40px;height:220px}
+.hero-photos img:first-child{margin-bottom:20px}
+.directory{position:relative}
+.search-panel{background:white;border:1px solid var(--line);border-radius:22px;padding:24px;margin-bottom:30px;box-shadow:0 8px 32px #19392e06}
+.search-panel h2{font-size:23px;letter-spacing:-.8px;margin-bottom:18px}
+label{font-size:13px;font-weight:600;color:#455e51}
+input:not([type=checkbox]),select{border:1px solid var(--line);border-radius:10px;padding:13px 14px;color:var(--ink);background:#fafbf8;font-size:14px;min-height:48px}
+input:focus,select:focus,button:focus-visible,a:focus-visible{outline:3px solid #97b66b;outline-offset:3px}
+.filters{gap:16px}
+.filters label{margin:0}
+.rated-label{font-weight:400;display:flex;align-items:center;gap:7px}
+input[type=checkbox]{accent-color:var(--green);width:16px;height:16px}
+#results{font-size:14px;color:var(--muted);margin-bottom:20px}
+.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+#cards article{padding:14px 14px 18px;border:1px solid var(--line);border-radius:20px;display:flex;flex-direction:column;align-items:flex-start;box-shadow:0 4px 14px #19392e03;transition:transform .18s,box-shadow .18s}
+#cards article:hover{transform:translateY(-3px);box-shadow:0 12px 30px #19392e0c}
+#cards article>img{height:auto;aspect-ratio:1.52;max-height:none;object-fit:cover;border-radius:12px;margin-bottom:16px}
+#cards h3{font-size:19px;line-height:1.4;letter-spacing:-.5px;margin:7px 6px 10px}
+#cards small{margin:0 6px;color:var(--green);font-weight:600;font-size:12px}
+#cards article>p{margin:0 6px 14px;font-size:14px;color:var(--muted)}
+#cards .rating-stars{font-size:19px}
+#cards .contact{width:100%;text-align:center;background:var(--green);border-color:var(--green);padding:12px;margin-top:auto;border-radius:11px;font-size:14px;font-weight:700}
+#cards .view-photos{background:#edf3e5;color:var(--green);border:0;border-radius:8px;font-size:12px;padding:7px 12px;margin:0 6px 13px;order:0}
+.home-showcase{margin:64px 0}
+.home-showcase h2{font-size:28px;letter-spacing:-1px;margin-bottom:22px}
+.showcase-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.showcase-grid article{padding:23px;border-radius:18px}
+.showcase-grid h3{font-size:16px}
+.showcase-grid small{font-size:12px}
+.showcase-grid blockquote{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:0}
+section.form{max-width:none;padding:38px;background:#eaf0e0;border-color:#dce6cf;border-radius:24px;display:grid;grid-template-columns:1fr 1.25fr;gap:48px;margin:64px 0 32px}
+.form h2{font-size:33px;letter-spacing:-1.4px;line-height:1.2;max-width:360px}
+.form p{color:var(--muted);font-size:15px}
+.form form{background:#fff;padding:24px;border-radius:18px}
+.form form label:first-child{margin-top:0}
+.form button[type=submit]{width:100%;padding:13px;border-radius:10px;font-weight:700;font-size:14px}
+.form form label:has([type=checkbox]){font-weight:400;font-size:12px;line-height:1.7}
+footer{padding:22px 0 30px;display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+dialog{padding:24px;border-radius:22px}
+button:disabled{cursor:wait;opacity:.55}
+@media(max-width:900px){.hero{gap:24px}.hero-photos img{height:200px}.hero-photos img:last-child{height:180px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}section.form{gap:24px;padding:28px}.showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){main,nav{width:calc(100% - 32px)}nav{padding:16px 0}.brand{font-size:18px}.brand-mark{width:31px;height:31px;font-size:19px}nav a{font-size:11px;padding:10px 12px}.hero{grid-template-columns:1fr;padding:32px 0;gap:24px}h1{font-size:43px;letter-spacing:-2px}.hero-copy>p:last-child{font-size:16px}.hero-photos{padding:12px;border-radius:22px;gap:10px}.hero-photos img{height:180px}.hero-photos img:last-child{height:160px;margin-top:20px}.hero-photos img:first-child{margin-bottom:0}.search-panel{padding:18px}.filters{grid-template-columns:1fr}.grid,.showcase-grid{grid-template-columns:1fr}#cards article>img{aspect-ratio:1.6}section.form{grid-template-columns:1fr;padding:22px;gap:15px}.form h2{font-size:28px}.form form{padding:18px}.home-showcase{margin:42px 0}footer{flex-direction:column;gap:5px}}
 </style>
-<header><nav><strong>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
+<header><nav><strong class="brand"><span class="brand-mark" aria-hidden="true">SL</span>Serviços Locais</strong><a href="#cadastro">Cadastrar meu serviço</a></nav></header>
 <main>
 <section class="hero">
+<div class="hero-copy">
 <p class="place">São Raimundo Nonato · PI</p>
-<h1>Encontre quem faz o serviço.</h1>
-<p>Escolha uma categoria e fale direto com um profissional pelo WhatsApp.</p>
+<h1>O profissional certo.<br><span>Perto de você.</span></h1>
+<p>Encontre serviços na sua cidade, conheça os trabalhos e converse direto pelo WhatsApp.</p>
+</div>
+<div class="hero-photos" aria-label="Exemplos ilustrativos de serviços">
+<img src="https://raw.githubusercontent.com/ricardoribeiro110384-tech/servicos-locais/f99d887597f83e76eec5bdd2ce962bb3e3ae059a/demo/eletricista.jpg" alt="Imagem ilustrativa de manutenção elétrica" fetchpriority="high">
+<img src="https://raw.githubusercontent.com/ricardoribeiro110384-tech/servicos-locais/f99d887597f83e76eec5bdd2ce962bb3e3ae059a/demo/ar-condicionado.jpg" alt="Imagem ilustrativa de manutenção de ar-condicionado">
+</div>
 </section>
-<section aria-labelledby="titulo">
+<section class="directory" aria-labelledby="titulo">
+<div class="search-panel">
 <h2 id="titulo">Buscar profissionais</h2>
 <label>Nome do profissional ou serviço<input id="search" type="search"></label>
 <div class="filters">
@@ -57,6 +128,7 @@ dialog img{display:block;max-width:100%;max-height:72vh;object-fit:contain;margi
 </div>
 <label><input id="rated" type="checkbox"> Somente profissionais com avaliações</label>
 <p id="connection" role="status"></p>
+</div>
 <p id="results" role="status">Carregando profissionais…</p>
 <div id="cards" class="grid"></div>
 </section>
@@ -66,8 +138,9 @@ dialog img{display:block;max-width:100%;max-height:72vh;object-fit:contain;margi
 <div id="home-reviews" class="showcase-grid"></div>
 </section>
 <section class="form" id="cadastro">
-<h2>Cadastre seu serviço gratuitamente</h2>
+<div class="registration-copy"><h2>Seu próximo cliente pode estar aqui.</h2>
 <p>Seu anúncio mostra seu nome e o botão para abrir uma conversa. O perfil pago pode incluir foto, descrição e avaliações.</p>
+</div>
 <form id="register">
 <label>Serviço que você oferece<select required name="category"><option value="">Selecione</option></select></label>
 <label>Nome profissional<input name="name" required minlength="2" maxlength="80" autocomplete="name"></label>
@@ -77,6 +150,7 @@ dialog img{display:block;max-width:100%;max-height:72vh;object-fit:contain;margi
 <p id="feedback" role="status"></p>
 </form>
 </section>
+<footer><span>Serviços Locais</span><span>São Raimundo Nonato · Piauí</span></footer>
 </main>
 <dialog id="photo-dialog" aria-labelledby="photo-title">
 <div class="dialog-header"><h2 id="photo-title">Fotos do trabalho</h2><button id="close-photos" type="button">Fechar</button></div>
@@ -290,7 +364,7 @@ function stars(value) {
 function renderShowcases() {
   const paid = providers.filter(profile => profile.premium);
   const reviews = paid.flatMap(profile =>
-    (profile.reviews || []).map(review => ({profile, review})));
+    (profile.reviews || []).map(review => ({profile, review}))).slice(0, 3);
   byId('reviews-empty').hidden = reviews.length > 0;
 
   byId('home-reviews').replaceChildren(...reviews.map(({profile, review}) => {
