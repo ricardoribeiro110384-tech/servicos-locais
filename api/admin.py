@@ -6,7 +6,7 @@ import json
 import os
 from contextlib import closing
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 
 from psycopg.errors import ForeignKeyViolation
 
@@ -82,7 +82,21 @@ class handler(Handler):
     def do_GET(self):
         if not self.authorize():
             return
-        if urlsplit(self.path).query != "dados=1":
+        query = parse_qs(urlsplit(self.path).query)
+        if "metricas" in query:
+            days = 7 if query.get("dias") == ["7"] else 30
+            with closing(connect()) as db:
+                rows = list(db.execute("""SELECT p.id, p.name, p.category,
+                    count(c.event_id) FILTER (WHERE c.action='photos') AS photos,
+                    count(DISTINCT c.visitor_id) FILTER (WHERE c.action='photos') AS photos_unique,
+                    count(c.event_id) FILTER (WHERE c.action='whatsapp') AS whatsapp,
+                    count(DISTINCT c.visitor_id) FILTER (WHERE c.action='whatsapp') AS whatsapp_unique
+                    FROM providers p LEFT JOIN provider_clicks c ON c.provider_id=p.id
+                        AND c.created_at >= CURRENT_TIMESTAMP - (? * INTERVAL '1 day')
+                    GROUP BY p.id ORDER BY count(c.event_id) DESC, p.name""", (days,)))
+            self.json_reply(200, {"days": days, "rows": rows})
+            return
+        if query.get("dados") != ["1"]:
             page = Path(__file__).resolve().parent.parent / "templates" / "admin.html"
             self.reply(200, page.read_bytes(), "text/html; charset=utf-8")
             return
