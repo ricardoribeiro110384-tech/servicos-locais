@@ -35,6 +35,7 @@ a{color:#176342}
 <p id="password-feedback" role="status"></p>
 </form>
 </details>
+<section><h2>Avaliações pendentes</h2><div id="pending-reviews"></div></section>
 <div class="filters">
 <label>Buscar por nome, telefone ou serviço<input id="search" type="search"></label>
 <label>Situação<select id="status"><option value="">Todos</option><option value="pending">Pendentes</option><option value="active">Publicados</option><option value="hidden">Ocultos</option></select></label>
@@ -155,11 +156,63 @@ function render() {
   }));
 }
 
+function renderPending(reviews) {
+  const target = byId('pending-reviews');
+  target.replaceChildren();
+  if (!reviews.length) {
+    target.textContent = 'Nenhuma avaliação pendente.';
+    return;
+  }
+  for (const review of reviews) {
+    const card = document.createElement('article');
+    const title = document.createElement('strong');
+    title.textContent = review.provider_name;
+    const text = document.createElement('p');
+    text.textContent = review.name + ' · ' + '★'.repeat(review.stars) + '☆'.repeat(5-review.stars);
+    const comment = document.createElement('p');
+    comment.textContent = review.comment;
+    const feedback = document.createElement('p');
+    feedback.setAttribute('role','status');
+    card.append(title,text,comment);
+    const buttons = [];
+    for (const [action,label] of [['approve','Aprovar'],['reject','Rejeitar']]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      buttons.push(button);
+      button.addEventListener('click', async () => {
+        buttons.forEach(item => item.disabled = true);
+        try {
+          const response = await fetch(endpoint + '?avaliacao=1', {method:'POST',
+            headers:{'Content-Type':'application/json','X-Admin-Request':'1'},
+            body:JSON.stringify({id:Number(review.id),action})});
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Falha ao moderar.');
+          feedback.textContent = result.message;
+          if (action === 'approve') {
+            const refresh = await fetch(endpoint + '?dados=1', {cache:'no-store'});
+            if (!refresh.ok) throw new Error('Avaliação aprovada. Recarregue o painel para atualizar os perfis.');
+            providers = (await refresh.json()).providers;
+            render();
+          }
+        } catch(error) {
+          feedback.textContent = error.message;
+          buttons.forEach(item => item.disabled = false);
+        }
+      });
+      card.append(button,document.createTextNode(' '));
+    }
+    card.append(feedback);
+    target.append(card);
+  }
+}
 async function load() {
   try {
     const response = await fetch(endpoint + '?dados=1', {cache:'no-store'});
     if (!response.ok) throw new Error();
-    providers = (await response.json()).providers;
+    const data = await response.json();
+    providers = data.providers;
+    renderPending(data.pending_reviews || []);
     byId('search').addEventListener('input', render);
     byId('status').addEventListener('change', render);
     render();
