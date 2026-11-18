@@ -17,13 +17,7 @@ button:disabled{opacity:.5}h1{font-size:29px}h2{font-size:21px}.photos{display:g
 <form id="login"><label>Telefone com DDD<input name="phone" type="tel" autocomplete="tel" required></label>
 <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="15" maxlength="128" required></label><button>Entrar</button></form>
 <p>Já tem um perfil, mas ainda não tem senha? Solicite ao administrador a habilitação do acesso. Para recuperar o acesso, solicite uma senha provisória ao administrador.</p>
-<details><summary>Criar meu cadastro gratuito</summary>
-<form id="signup"><label>Nome profissional<input name="name" minlength="2" maxlength="80" required></label>
-<label>Serviço<select name="category" id="categories" required></select></label>
-<label>Telefone com DDD<input name="phone" type="tel" autocomplete="tel" required></label>
-<label>Crie uma senha<input name="password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label>
-<label><input name="consent" type="checkbox" required> Autorizo a publicação do meu nome e contato profissional.</label><button>Cadastrar e entrar</button></form>
-</details></section>
+<p>Ainda não tem perfil? <a href="/#cadastro">Criar meu perfil gratuito</a></p></section>
 <div id="dashboard" hidden><button id="logout">Sair</button>
 <details><summary>Alterar minha senha</summary><form id="change-password">
 <label>Senha atual<input name="current" type="password" autocomplete="current-password" maxlength="128" required></label>
@@ -88,7 +82,7 @@ async function load(){
   return card;
  }));
 }
-for(const [id,action] of [['login','login'],['signup','register']]){
+for(const [id,action] of [['login','login']]){
  el(id).addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const button=form.querySelector('button');button.disabled=true;try{const data=Object.fromEntries(new FormData(form));data.consent=form.elements.consent?.checked===true;await api({...data,action});form.reset();el('status').textContent=action==='register'?'Cadastro recebido. Seu perfil será publicado após aprovação.':'';await load();}catch(e){el('status').textContent=e.message;}finally{button.disabled=false;}});
 }
 el('change-password').addEventListener('submit',async e=>{
@@ -98,7 +92,7 @@ el('change-password').addEventListener('submit',async e=>{
 });
 el('logout').addEventListener('click',async()=>{try{await api({action:'logout'});await load();}catch(e){el('status').textContent=e.message;}});
 async function start(){
- try{const r=await fetch('/api/catalogo');if(!r.ok)throw Error();const d=await r.json();for(const category of d.categories)el('categories').add(new Option(category,category));await load();}
+ try{const r=await fetch('/api/catalogo');if(!r.ok)throw Error();const d=await r.json();await load();}
  catch{el('status').textContent='Não foi possível carregar. Recarregue a página para tentar novamente.';}
 }
 start();
